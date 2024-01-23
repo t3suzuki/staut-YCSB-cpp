@@ -345,7 +345,7 @@ void RocksdbDB::GetOptions(const utils::Properties &props, rocksdb::Options *opt
     rocksdb::BlockBasedTableOptions table_options;
 
     table_options.block_align = 1;
-    table_options.block_size = 2 * 1024;
+    table_options.block_size = 4 * 1024;
     
     size_t cache_size = std::stoul(props.GetProperty(PROP_CACHE_SIZE, PROP_CACHE_SIZE_DEFAULT));
     if (cache_size > 0) {
