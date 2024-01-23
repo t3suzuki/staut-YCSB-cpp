@@ -1,0 +1,12 @@
+
+ROCKSDB_PATH = /home/tomoya-s/mountpoint2/tomoya-s/rocksdb
+
+N_TH ?= 1
+DB_PATH ?=
+
+CFLAGS = -Wall -g -O3
+CFLAGS += -DN_TH=$(N_TH)
+CFLAGS += -DDB_PATH=$(DB_PATH)
+
+compact:
+	g++ $(CFLAGS) -o compact compact.cc -I $(ROCKSDB_PATH)/include/ -L $(ROCKSDB_PATH)/build -lrocksdb
