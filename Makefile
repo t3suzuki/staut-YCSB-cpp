@@ -13,14 +13,15 @@
 # Database bindings
 BIND_WIREDTIGER ?= 0
 BIND_LEVELDB ?= 0
-BIND_ROCKSDB ?= 0
+BIND_ROCKSDB ?= 1
 BIND_LMDB ?= 0
 BIND_SQLITE ?= 0
 
 # Extra options
 DEBUG_BUILD ?=
-EXTRA_CXXFLAGS ?=
-EXTRA_LDFLAGS ?=
+ROCKSDB_PATH = /home/tomoya-s/mountpoint2/tomoya-s/rocksdb
+EXTRA_CXXFLAGS ?= -I$(ROCKSDB_PATH)/include
+EXTRA_LDFLAGS ?= -L$(ROCKSDB_PATH)/build -ldl -lz -lsnappy -lzstd -lbz2 -llz4
 
 # HdrHistogram for tail latency report
 BIND_HDRHISTOGRAM ?= 1

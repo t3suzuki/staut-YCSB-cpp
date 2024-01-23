@@ -18,9 +18,9 @@ def run(mode, op, n_core, n_th, cache_capacity, workload, count):
     drive_ids = ["0000:0f:00.0","0000:0e:00.0"]
     
     if mode == "abt" or mode == "pthpth":
-        db_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-rocks-abt"
+        db_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-rocks-abt/{}".format(workload)
     else:
-        db_path = "/home/tomoya-s/mountpoint/tomoya-s/ycsb-rocks-native"
+        db_path = "/home/tomoya-s/mountpoint/tomoya-s/ycsb-rocks-native/{}".format(workload)
         
     if op == "set":
         print("We are modifying database {}. Are you Sure? (Y/N)".format(db_path))
@@ -92,8 +92,8 @@ def run(mode, op, n_core, n_th, cache_capacity, workload, count):
 #run("abt", "set", 1, 1,    1*1024*1024*1024, "workloadc", 1000*1000*10)
 #run("abt", "get", 8, 128, 1*1024*1024, "workloadc", 1000*1000*10)
 #run("abt", "get", 8, 128, 1*1024*1024, "workloadc", 1000*1000*8)
-#run("native", "set", 1, 1,    1*1024*1024*1024, "workloadc", 1000*1000*10)
-run("native", "get", 8, 128, 1*1024*1024, "workloadc", 1000*1000*10)
+run("native", "set", 1, 1,    1*1024*1024*1024, "workloadc", 1000*1000*10)
+#run("native", "get", 8, 128, 1*1024*1024, "workloadc", 1000*1000*10)
 #run("native", "get", 8, 128, 1*1024*1024, "workloadc", 1000*1000*1)
 #run("native", "get", 1, 128, 1*1024*1024, "workloadc", 1000*1000*1)
 
