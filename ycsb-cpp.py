@@ -13,7 +13,7 @@ def get_cmd(op, n_th, cache_capacity, workload, dbname):
     return cmd
 
 def run(mode, op, n_core, n_th, cache_capacity, workload):
-    print("mode={}, op={}, n_core={}, n_th={}, cache_size=1ULL*{}".format(mode, op, n_core, n_th, cache_capacity))
+    print("mode={}, op={}, n_core={}, n_th={}, cache_size={}ULL".format(mode, op, n_core, n_th, cache_capacity))
 
     drive_ids = ["0000:0f:00.0","0000:0e:00.0"]
     
@@ -23,12 +23,10 @@ def run(mode, op, n_core, n_th, cache_capacity, workload):
         db_path = "/home/tomoya-s/mountpoint/tomoya-s/ycsb-rocks-native/{}".format(workload)
         
     if op == "set":
-        print("We are modifying database {}. Are you Sure? (Y/N)".format(db_path))
-        x = input()
-        assert x == "y"
-        set_data = 1
-    else:
-        set_data = 0
+        #print("We are modifying database {}. Are you Sure? (Y/N)".format(db_path))
+        #x = input()
+        #assert x == "y"
+        subprocess.run("rm -rf {}".format(db_path).split())
         
     if mode == "native":
         add_sched_yield = 0
@@ -62,10 +60,7 @@ def run(mode, op, n_core, n_th, cache_capacity, workload):
         
         my_env["LD_PRELOAD"] = MYLIB_PATH + "/mylib.so"
         my_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:/home/tomoya-s/mountpoint2/tomoya-s/rocksdb/build"
-        #my_env["ABT_PREEMPTION_INTERVAL_USEC"] = "1000000"
         my_env["ABT_PREEMPTION_INTERVAL_USEC"] = "10000000"
-        #my_env["ABT_THREAD_STACKSIZE"] = "65536"
-        #my_env["ABT_THREAD_STACKSIZE"] = "1048576"
         my_env["HOOKED_ROCKSDB_DIR"] = db_path
         my_env["DRIVE_IDS"] = "_".join(drive_ids)
         #my_env["ABT_INITIAL_NUM_SUB_XSTREAMS"] = str(n_th + 16)
@@ -84,65 +79,28 @@ def run(mode, op, n_core, n_th, cache_capacity, workload):
     #print("captured stdout: {}".format(res.stdout.decode()))
     #print("captured stderr: {}".format(res.stderr.decode()))
 
-#run("abt", "set", 1, 1,    1*1024*1024*1024, "workloada")
-#run("abt", "get", 10, 500, 1*1024*1024*1024, "workloada")
+def run_clean():
+    subprocess.run("dd if=/dev/zero of=/root/myfs_superblock count=1 bs=2G".split())
+    
 
-#run("abt", "set", 10, 100, 1*1024*1024*1024, "workloadb")
-#run("abt", "get", 10, 100, 1*1024*1024*1024, "workloadb")
+workloads = [
+    "workloada",
+    "workloadb",
+    "workloadc",
+    "workloadd",
+    "workloadf",
+    "workloadau",
+    "workloadbu",
+    "workloadcu",
+    "workloaddu",
+    "workloadfu",
+    ]
 
-#run("abt", "set", 1, 1,    1*1024*1024*1024, "workloadf")
-#run("abt", "get", 8, 128, 1*1024*1024, "workloadd")
-#run("abt", "get", 8, 128, 1*1024*1024, "workloadc")
+cache_size = 2*1024*1024*1024
+mode = "native"
+for workload in workloads:
+    run_clean()
+    run(mode, "set", 1, 1, cache_size, workload)
+    run(mode, "get", 8, 128, cache_size, workload)
 
-#run("native", "set", 1, 1,    1*1024*1024*1024, "workloada")
-#run("native", "set", 1, 1,    1*1024*1024*1024, "workloadb")
-#run("native", "set", 1, 1,    1*1024*1024*1024, "workloadc")
-#run("native", "set", 1, 1,    1*1024*1024*1024, "workloadd")
-#run("native", "set", 1, 1,    1*1024*1024*1024, "workloadf")
-#run("native", "get", 8, 128,    1*1024*1024*1024, "workloada")
-#run("native", "get", 8, 128,    1*1024*1024*1024, "workloadb")
-#run("native", "get", 8, 128,    1*1024*1024*1024, "workloadc")
-#run("native", "get", 8, 128,    1*1024*1024*1024, "workloadd")
-#run("native", "get", 8, 128,    1*1024*1024*1024, "workloadf")
-
-#run("abt", "set", 1, 1,    1*1024*1024*1024, "workloada")
-#run("abt", "set", 1, 1,    1*1024*1024*1024, "workloadb")
-#run("abt", "set", 1, 1,    1*1024*1024*1024, "workloadc")
-#run("abt", "set", 1, 1,    1*1024*1024*1024, "workloadd")
-#run("abt", "set", 1, 1,    1*1024*1024*1024, "workloadf")
-
-# run("abt", "get", 8, 128,    1*1024*1024*1024, "workloada")
-# run("abt", "get", 8, 128,    1*1024*1024*1024, "workloadb")
-# run("abt", "get", 8, 128,    1*1024*1024*1024, "workloadc")
-# run("abt", "get", 8, 128,    1*1024*1024*1024, "workloadd")
-# run("abt", "get", 8, 128,    1*1024*1024*1024, "workloadf")
-
-#run("abt", "set", 1, 1,    1*1024*1024*1024, "workloadd")
-#run("abt", "get", 8, 128,    2*1024*1024*1024, "workloadd")
-#run("abt", "set", 1, 1,    1*1024*1024*1024, "workloadf")
-
-#run("abt", "set", 1, 1,    1*1024*1024*1024, "workloadc")
-run("abt", "get", 8, 128,    2*1024*1024*1024, "workloadc")
-#run("native", "set", 1, 1,    1*1024*1024*1024, "workloadcu")
-#run("native", "get", 8, 128,    2*1024*1024*1024, "workloadc")
-
-#run("abt", "get", 8, 128,    2*1024*1024*1024, "workloadf")
-#run("abt", "set", 1, 1,    1*1024*1024*1024, "workloadc")
-#run("abt", "get", 8, 128,    2*1024*1024*1024, "workloadc")
-#run("abt", "set", 1, 1,    1*1024*1024*1024, "workloadb")
-#run("abt", "get", 8, 128,    2*1024*1024*1024, "workloadb")
-
-#run("abt", "get", 8, 128,    1*1024*1024*1024, "workloadd")
-#run("abt", "get", 8, 128,    1*1024*1024*1024, "workloadf")
-
-#run("native", "get", 8, 128, 1*1024*1024, "workloadb")
-#run("native", "get", 8, 128, 1*1024*1024, "workloadc")
-#run("native", "get", 1, 128, 1*1024*1024, "workloadc")
-
-#run("native", "get", 10, 100, 1*1024*1024*1024, "workloadb")
-#run("native", "get", 10, 100, 1*1024*1024*1024, "workloadc")
-#run("native", "get", 10, 100, 1*1024*1024*1024, "workloadd")
-#run("native", "get", 10, 100, 1*1024*1024*1024, "workloade")
-#run("native", "get", 10, 100, 1*1024*1024*1024, "workloadf")
-#run("io_uring", "get", 10, 500, 1024*1024*1024)
-#run("abt", "get", 10, 100, 2*1024*1024*1024)
+#run("abt", "get", 8, 128,    2*1024*1024*1024, "workloadcu")
