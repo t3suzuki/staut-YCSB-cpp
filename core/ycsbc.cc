@@ -141,7 +141,7 @@ int main(const int argc, const char *argv[]) {
       }
 
       client_threads.emplace_back(std::async(std::launch::async, ycsbc::ClientThread, dbs[i], &wl,
-                                             thread_ops, true, true, !do_transaction, &latch, nullptr));
+                                             thread_ops, true, true, !do_transaction, &latch, nullptr, nullptr));
     }
     assert((int)client_threads.size() == num_threads);
 
@@ -185,6 +185,7 @@ int main(const int argc, const char *argv[]) {
     }
     std::vector<std::future<int>> client_threads;
     std::vector<ycsbc::utils::RateLimiter *> rate_limiters;
+    volatile bool quit = false;
     for (int i = 0; i < num_threads; ++i) {
       int thread_ops = total_ops / num_threads;
       if (i < total_ops % num_threads) {
@@ -197,7 +198,7 @@ int main(const int argc, const char *argv[]) {
       }
       rate_limiters.push_back(rlim);
       client_threads.emplace_back(std::async(std::launch::async, ycsbc::ClientThread, dbs[i], &wl,
-                                             thread_ops, false, !do_load, true, &latch, rlim));
+                                             thread_ops, false, !do_load, true, &latch, rlim, &quit));
     }
 
     std::future<void> rlim_future;

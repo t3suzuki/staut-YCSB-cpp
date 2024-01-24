@@ -21,7 +21,7 @@
 namespace ycsbc {
 
 inline int ClientThread(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int num_ops, bool is_loading,
-                        bool init_db, bool cleanup_db, utils::CountDownLatch *latch, utils::RateLimiter *rlim) {
+                        bool init_db, bool cleanup_db, utils::CountDownLatch *latch, utils::RateLimiter *rlim, volatile bool *quit) {
 
   try {
     if (init_db) {
@@ -30,6 +30,12 @@ inline int ClientThread(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int num_op
 
     int ops = 0;
     for (int i = 0; i < num_ops; ++i) {
+      if (quit) {
+	if (*quit) {
+	  return ops;
+	}
+      }
+      
       if (rlim) {
         rlim->Consume(1);
       }
