@@ -46,6 +46,10 @@ inline int ClientThread(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int num_op
         wl->DoTransaction(*db);
       }
       ops++;
+
+#if ADD_SCHED_YIELD
+      sched_yield();
+#endif
     }
 
     if (cleanup_db) {

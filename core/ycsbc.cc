@@ -17,6 +17,7 @@
 #include <chrono>
 #include <iomanip>
 
+#include <unistd.h>
 #include "client.h"
 #include "core_workload.h"
 #include "db_factory.h"
@@ -208,6 +209,13 @@ int main(const int argc, const char *argv[]) {
 
     assert((int)client_threads.size() == num_threads);
 
+    const int time_sec = 10;
+    for (int t = 0; t < time_sec; ++t) {
+      printf("%d/%d\n", t, time_sec);
+      sleep(1);
+    }
+    quit = true;
+    
     int sum = 0;
     for (auto &n : client_threads) {
       assert(n.valid());
