@@ -18,21 +18,23 @@ int main() {
   rocksdb::Options db_options;
   db_options.allow_mmap_reads = false;
   db_options.allow_mmap_writes = false;
+  
   db_options.use_direct_reads = true;
   db_options.use_direct_io_for_flush_and_compaction = true;
-  db_options.db_write_buffer_size = 0;  // disabled
-  db_options.write_buffer_size = 512 * 1024 * 1024; // memtable size
+  
+  //db_options.db_write_buffer_size = 0;  // disabled
+  db_options.write_buffer_size = 1073741824;
   db_options.create_if_missing = true;
-  db_options.manual_wal_flush = true;
-  db_options.allow_concurrent_memtable_write = false;
-  db_options.compaction_readahead_size = 0;
+  //db_options.manual_wal_flush = true;
+  //db_options.allow_concurrent_memtable_write = false;
+  //db_options.compaction_readahead_size = 0;
   db_options.max_background_jobs = 1;
-  db_options.level0_file_num_compaction_trigger = 2;
-  db_options.level0_slowdown_writes_trigger = 16;
-  db_options.level0_stop_writes_trigger = 24;
-  db_options.target_file_size_base =    10485760000ULL;
-  db_options.max_bytes_for_level_base = 104857600000ULL;
-  db_options.disable_auto_compactions = true;
+  db_options.level0_file_num_compaction_trigger = 8;
+  db_options.level0_slowdown_writes_trigger = 0;
+  db_options.level0_stop_writes_trigger = 0;
+  db_options.target_file_size_base =    2147483648ULL;
+  db_options.max_bytes_for_level_base = 0;
+  //db_options.disable_auto_compactions = true;
   db_options.compression = rocksdb::CompressionType::kNoCompression;
   db_options.max_open_files = -1; // read index and filter all.
 
