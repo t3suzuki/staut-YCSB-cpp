@@ -32,7 +32,8 @@ inline int ClientThread(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int num_op
     for (int i = 0; i < num_ops; ++i) {
       if (quit) {
 	if (*quit) {
-	  return ops;
+	  //return ops;
+	  goto out;
 	}
       }
       
@@ -52,6 +53,7 @@ inline int ClientThread(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int num_op
 #endif
     }
 
+  out:
     if (cleanup_db) {
       db->Cleanup();
     }

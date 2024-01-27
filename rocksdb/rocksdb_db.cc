@@ -60,7 +60,7 @@ namespace {
   const std::string PROP_MAX_OPEN_FILES_DEFAULT = "-1";
 
   const std::string PROP_L0_COMPACTION_TRIGGER = "rocksdb.level0_file_num_compaction_trigger";
-  const std::string PROP_L0_COMPACTION_TRIGGER_DEFAULT = "0";
+  const std::string PROP_L0_COMPACTION_TRIGGER_DEFAULT = "8";
 
   const std::string PROP_L0_SLOWDOWN_TRIGGER = "rocksdb.level0_slowdown_writes_trigger";
   const std::string PROP_L0_SLOWDOWN_TRIGGER_DEFAULT = "0";
@@ -233,6 +233,7 @@ void RocksdbDB::Cleanup() {
       cf_handles_[i] = nullptr;
     }
   }
+  db_->Close();
   delete db_;
 }
 
@@ -287,9 +288,9 @@ void RocksdbDB::GetOptions(const utils::Properties &props, rocksdb::Options *opt
     if (val != 0) {
       opt->max_background_jobs = val;
     }
-    val = std::stoi(props.GetProperty(PROP_TARGET_FILE_SIZE_BASE, PROP_TARGET_FILE_SIZE_BASE_DEFAULT));
-    if (val != 0) {
-      opt->target_file_size_base = val;
+    long long val_ll = std::stoll(props.GetProperty(PROP_TARGET_FILE_SIZE_BASE, PROP_TARGET_FILE_SIZE_BASE_DEFAULT));
+    if (val_ll != 0) {
+      opt->target_file_size_base = val_ll;
     }
     val = std::stoi(props.GetProperty(PROP_TARGET_FILE_SIZE_MULT, PROP_TARGET_FILE_SIZE_MULT_DEFAULT));
     if (val != 0) {
