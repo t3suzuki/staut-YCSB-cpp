@@ -350,7 +350,7 @@ void RocksdbDB::GetOptions(const utils::Properties &props, rocksdb::Options *opt
     
     size_t cache_size = std::stoul(props.GetProperty(PROP_CACHE_SIZE, PROP_CACHE_SIZE_DEFAULT));
     if (cache_size > 0) {
-      block_cache = rocksdb::NewLRUCache(cache_size);
+      block_cache = rocksdb::NewLRUCache(cache_size, 12); // set shard bits.
       table_options.block_cache = block_cache;
     }
 #if ROCKSDB_MAJOR < 8

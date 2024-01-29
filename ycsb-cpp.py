@@ -97,9 +97,9 @@ workloads = [
     "workloadfu",
     ]
 
-cache_size = 20*1024*1024*1024
-#mode = "abt"
-mode = "native"
+cache_size = 10*1024*1024*1024
+mode = "abt"
+#mode = "native"
 for nctx in [128, 256, 64]:
     for workload in workloads:
         run_clean()
