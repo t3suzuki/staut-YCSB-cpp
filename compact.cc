@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include "rocksdb/db.h"
 #include "rocksdb/table.h"
+#include "rocksdb/slice_transform.h"
 
 #define quote(x) q(x)
 #define q(x) #x
@@ -38,9 +39,14 @@ int main() {
   db_options.compression = rocksdb::CompressionType::kNoCompression;
   db_options.max_open_files = -1; // read index and filter all.
 
+  db_options.prefix_extractor.reset(rocksdb::NewFixedPrefixTransform(20));
+
+  
   rocksdb::BlockBasedTableOptions table_options;
   table_options.block_size = 4 * 1024;
   table_options.block_align = 1;
+  table_options.index_type = rocksdb::BlockBasedTableOptions::kHashSearch;
+  table_options.filter_policy = rocksdb::BlockBasedTableOptions().filter_policy;
   db_options.table_factory.reset(NewBlockBasedTableFactory(table_options));
   
   printf("DB_PATH = %s\n", FLAGS_db_path);

@@ -371,7 +371,9 @@ void RocksdbDB::GetOptions(const utils::Properties &props, rocksdb::Options *opt
     //table_options.data_block_hash_table_util_ratio = 0.75;
     //table_options.data_block_index_type = rocksdb::BlockBasedTableOptions::kDataBlockBinaryAndHash;
 
-#if 0
+    opt->table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_options));
+
+#if 1
     table_options.filter_policy = rocksdb::BlockBasedTableOptions().filter_policy;
 #else
     int bloom_bits = std::stoul(props.GetProperty(PROP_BLOOM_BITS, PROP_BLOOM_BITS_DEFAULT));
@@ -379,10 +381,6 @@ void RocksdbDB::GetOptions(const utils::Properties &props, rocksdb::Options *opt
       table_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(bloom_bits));
     }
 #endif
-    
-    opt->table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_options));
-
-
     
     if (props.GetProperty(PROP_INCREASE_PARALLELISM, PROP_INCREASE_PARALLELISM_DEFAULT) == "true") {
       opt->IncreaseParallelism();

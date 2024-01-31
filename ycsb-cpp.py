@@ -5,7 +5,7 @@ ABT_PATH = "/home/tomoya-s/work/github/ppopp21-preemption-artifact/argobots/inst
 MYLIB_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/pthabt/newlib"
 
 def get_cmd(op, n_th, cache_capacity, workload, dbname):
-    recordcount = 10
+    recordcount = 10*1000*1000
     common_args = "-db rocksdb -P workloads/{} -P rocksdb/rocksdb.properties -p rocksdb.cache_size={} -p rocksdb.dbname={} -p threadcount={} -p recordcount={} -p status=false -p zeropadding=20".format(workload, cache_capacity, dbname, n_th, recordcount)
     if op == "set":
         cmd = "./ycsb -load {}".format(common_args)
@@ -19,7 +19,7 @@ def run(mode, op, n_core, n_th, cache_capacity, workload):
     drive_ids = ["0000:0f:00.0","0000:0e:00.0"]
     
     if mode == "abt" or mode == "pthpth":
-        db_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-rocks-abt/{}".format(workload)
+        db_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-rocks-abt10m/{}".format(workload)
     else:
         db_path = "/home/tomoya-s/mountpoint/tomoya-s/ycsb-rocks-native/{}".format(workload)
         
@@ -65,8 +65,7 @@ def run(mode, op, n_core, n_th, cache_capacity, workload):
     #print("captured stdout: {}".format(res.stdout.decode()))
     #print("captured stderr: {}".format(res.stderr.decode()))
 
-    #if mode == "set":
-    if False:
+    if op == "set":
         subprocess.run("make -f Makefile.compact compact -B N_TH={} DB_PATH={}".format(n_th, db_path).split())
         if mode == "abt":
             mylib_build_cmd = "make -C {} ABT_PATH={} N_CORE={} ND={} USE_PREEMPT=0".format(MYLIB_PATH, ABT_PATH, 1, len(drive_ids))
@@ -109,9 +108,9 @@ mode = "abt"
 
 for nctx in [128]:
     for workload in workloads:
-        run_clean()
-        run(mode, "set", 1, 1, cache_size, workload)
-        run(mode, "get", 1, 1, cache_size, workload)
+#        run_clean()
+#        run(mode, "set", 1, 1, cache_size, workload)
+        run(mode, "get", 8, nctx, cache_size, workload)
 
 #for nctx in [64,128,256]:
 #    for workload in workloads:
