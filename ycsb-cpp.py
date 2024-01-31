@@ -5,7 +5,7 @@ ABT_PATH = "/home/tomoya-s/work/github/ppopp21-preemption-artifact/argobots/inst
 MYLIB_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/pthabt/newlib"
 
 def get_cmd(op, n_th, cache_capacity, workload, dbname):
-    recordcount = 10*1000*1000
+    recordcount = 100*1000*1000
     common_args = "-db rocksdb -P workloads/{} -P rocksdb/rocksdb.properties -p rocksdb.cache_size={} -p rocksdb.dbname={} -p threadcount={} -p recordcount={} -p status=false -p zeropadding=20".format(workload, cache_capacity, dbname, n_th, recordcount)
     if op == "set":
         cmd = "./ycsb -load {}".format(common_args)
@@ -83,20 +83,20 @@ def run(mode, op, n_core, n_th, cache_capacity, workload):
 
     
 def run_clean():
-    subprocess.run("dd if=/dev/zero of=/root/myfs_superblock count=1 bs=2G".split())
+    subprocess.run("dd if=/dev/zero of=/root/myfs_superblock count=1 bs=4G".split())
     
 
 workloads = [
-#    "workloada",
-#    "workloadb",
-#    "workloadc",
-#    "workloadd",
-#    "workloadf",
- #   "workloadau",
- #   "workloadbu",
+    "workloada",
+    "workloadb",
+    "workloadc",
+    "workloadd",
+    "workloadf",
+    "workloadau",
+    "workloadbu",
     "workloadcu",
- #   "workloaddu",
- #   "workloadfu",
+    "workloaddu",
+    "workloadfu",
     ]
 
 #cache_size = 10*1024*1024*1024
@@ -108,8 +108,8 @@ mode = "abt"
 
 for nctx in [128]:
     for workload in workloads:
-#        run_clean()
-#        run(mode, "set", 1, 1, cache_size, workload)
+        run_clean()
+        run(mode, "set", 1, 1, cache_size, workload)
         run(mode, "get", 8, nctx, cache_size, workload)
 
 #for nctx in [64,128,256]:
