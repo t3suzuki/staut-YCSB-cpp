@@ -18,6 +18,7 @@
 #include <rocksdb/status.h>
 #include <rocksdb/utilities/options_util.h>
 #include <rocksdb/write_batch.h>
+#include <rocksdb/slice_transform.h>
 
 namespace {
   const std::string PROP_NAME = "rocksdb.dbname";
@@ -118,6 +119,7 @@ rocksdb::DB *RocksdbDB::db_ = nullptr;
 int RocksdbDB::ref_cnt_ = 0;
 std::mutex RocksdbDB::mu_;
 rocksdb::WriteOptions wopt;
+rocksdb::ReadOptions ropt;
 
 void RocksdbDB::Init() {
 // merge operator disabled by default due to link error
@@ -198,6 +200,7 @@ void RocksdbDB::Init() {
   opt.create_if_missing = true;
   std::vector<rocksdb::ColumnFamilyDescriptor> cf_descs;
   GetOptions(props, &opt, &cf_descs);
+  
 #ifdef USE_MERGEUPDATE
   opt.merge_operator.reset(new YCSBUpdateMerge);
 #endif
@@ -220,6 +223,7 @@ void RocksdbDB::Init() {
   }
   wopt.disableWAL = 1;
   wopt.sync = 0;
+  //ropt.total_order_seek = false;
 }
 
 void RocksdbDB::Cleanup() { 
@@ -343,6 +347,7 @@ void RocksdbDB::GetOptions(const utils::Properties &props, rocksdb::Options *opt
       opt->allow_mmap_reads = true;
     }
 
+    opt->prefix_extractor.reset(rocksdb::NewFixedPrefixTransform(20));
     rocksdb::BlockBasedTableOptions table_options;
 
     table_options.block_align = 1;
@@ -361,12 +366,24 @@ void RocksdbDB::GetOptions(const utils::Properties &props, rocksdb::Options *opt
       table_options.block_cache_compressed = block_cache_compressed;
     }
 #endif
+    table_options.index_type = rocksdb::BlockBasedTableOptions::kHashSearch;
+    //table_options.index_shortening = rocksdb::BlockBasedTableOptions::IndexShorteningMode::kShortenSeparatorsAndSuccessor;
+    //table_options.data_block_hash_table_util_ratio = 0.75;
+    //table_options.data_block_index_type = rocksdb::BlockBasedTableOptions::kDataBlockBinaryAndHash;
+
+#if 0
+    table_options.filter_policy = rocksdb::BlockBasedTableOptions().filter_policy;
+#else
     int bloom_bits = std::stoul(props.GetProperty(PROP_BLOOM_BITS, PROP_BLOOM_BITS_DEFAULT));
     if (bloom_bits > 0) {
       table_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(bloom_bits));
     }
+#endif
+    
     opt->table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_options));
 
+
+    
     if (props.GetProperty(PROP_INCREASE_PARALLELISM, PROP_INCREASE_PARALLELISM_DEFAULT) == "true") {
       opt->IncreaseParallelism();
     }
@@ -440,8 +457,13 @@ DB::Status RocksdbDB::ReadSingle(const std::string &table, const std::string &ke
                                  const std::vector<std::string> *fields,
                                  std::vector<Field> &result) {
   std::string data;
-  rocksdb::Status s = db_->Get(rocksdb::ReadOptions(), key, &data);
+
+  //rocksdb::Slice key2 = key;
+  
+  rocksdb::Status s = db_->Get(ropt, key, &data);
   if (s.IsNotFound()) {
+    printf("Not found!\n");
+    exit(1);
     return kNotFound;
   } else if (!s.ok()) {
     throw utils::Exception(std::string("RocksDB Get: ") + s.ToString());
@@ -458,7 +480,7 @@ DB::Status RocksdbDB::ReadSingle(const std::string &table, const std::string &ke
 DB::Status RocksdbDB::ScanSingle(const std::string &table, const std::string &key, int len,
                                  const std::vector<std::string> *fields,
                                  std::vector<std::vector<Field>> &result) {
-  rocksdb::Iterator *db_iter = db_->NewIterator(rocksdb::ReadOptions());
+  rocksdb::Iterator *db_iter = db_->NewIterator(ropt);
   db_iter->Seek(key);
   for (int i = 0; db_iter->Valid() && i < len; i++) {
     std::string data = db_iter->value().ToString();
@@ -479,7 +501,7 @@ DB::Status RocksdbDB::ScanSingle(const std::string &table, const std::string &ke
 DB::Status RocksdbDB::UpdateSingle(const std::string &table, const std::string &key,
                                    std::vector<Field> &values) {
   std::string data;
-  rocksdb::Status s = db_->Get(rocksdb::ReadOptions(), key, &data);
+  rocksdb::Status s = db_->Get(ropt, key, &data);
   if (s.IsNotFound()) {
     return kNotFound;
   } else if (!s.ok()) {
