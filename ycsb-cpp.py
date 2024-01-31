@@ -5,8 +5,8 @@ ABT_PATH = "/home/tomoya-s/work/github/ppopp21-preemption-artifact/argobots/inst
 MYLIB_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/pthabt/newlib"
 
 def get_cmd(op, n_th, cache_capacity, workload, dbname):
-    recordcount = 100*1000*1000
-    common_args = "-db rocksdb -P workloads/{} -P rocksdb/rocksdb.properties -p rocksdb.cache_size={} -p rocksdb.dbname={} -p threadcount={} -p recordcount={} -p status=false".format(workload, cache_capacity, dbname, n_th, recordcount)
+    recordcount = 10
+    common_args = "-db rocksdb -P workloads/{} -P rocksdb/rocksdb.properties -p rocksdb.cache_size={} -p rocksdb.dbname={} -p threadcount={} -p recordcount={} -p status=false -p zeropadding=20".format(workload, cache_capacity, dbname, n_th, recordcount)
     if op == "set":
         cmd = "./ycsb -load {}".format(common_args)
     else:
@@ -35,21 +35,6 @@ def run(mode, op, n_core, n_th, cache_capacity, workload):
         add_sched_yield = 1
 
     subprocess.run("make -j -B ADD_SCHED_YIELD={}".format(add_sched_yield).split())
-    if op == "get":
-        subprocess.run("make -f Makefile.compact compact -B N_TH={} DB_PATH={}".format(n_th, db_path).split())
-        if mode == "abt":
-            mylib_build_cmd = "make -C {} ABT_PATH={} N_CORE={} ND={} USE_PREEMPT=0".format(MYLIB_PATH, ABT_PATH, 1, len(drive_ids))
-            process = subprocess.run(mylib_build_cmd.split())
-        
-            comp_env = os.environ.copy()
-            comp_env["LD_PRELOAD"] = MYLIB_PATH + "/mylib.so"
-            comp_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:/home/tomoya-s/mountpoint2/tomoya-s/rocksdb/build"
-            comp_env["HOOKED_ROCKSDB_DIR"] = db_path
-            comp_env["DRIVE_IDS"] = "_".join(drive_ids)
-            comp_env["MYFS_SUPERBLOCK_PATH"] = "/root/myfs_superblock"
-            res = subprocess.run("./compact", env=comp_env)
-        else:
-            res = subprocess.run("./compact")
         
     subprocess.run("sudo chcpu -e 1-{}".format(n_core-1).split())
     subprocess.run("sudo chcpu -d {}-39".format(n_core).split())
@@ -80,32 +65,58 @@ def run(mode, op, n_core, n_th, cache_capacity, workload):
     #print("captured stdout: {}".format(res.stdout.decode()))
     #print("captured stderr: {}".format(res.stderr.decode()))
 
+    #if mode == "set":
+    if False:
+        subprocess.run("make -f Makefile.compact compact -B N_TH={} DB_PATH={}".format(n_th, db_path).split())
+        if mode == "abt":
+            mylib_build_cmd = "make -C {} ABT_PATH={} N_CORE={} ND={} USE_PREEMPT=0".format(MYLIB_PATH, ABT_PATH, 1, len(drive_ids))
+            process = subprocess.run(mylib_build_cmd.split())
+        
+            comp_env = os.environ.copy()
+            comp_env["LD_PRELOAD"] = MYLIB_PATH + "/mylib.so"
+            comp_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:/home/tomoya-s/mountpoint2/tomoya-s/rocksdb/build"
+            comp_env["HOOKED_ROCKSDB_DIR"] = db_path
+            comp_env["DRIVE_IDS"] = "_".join(drive_ids)
+            comp_env["MYFS_SUPERBLOCK_PATH"] = "/root/myfs_superblock"
+            res = subprocess.run("./compact", env=comp_env)
+        else:
+            res = subprocess.run("./compact")
+
+    
 def run_clean():
     subprocess.run("dd if=/dev/zero of=/root/myfs_superblock count=1 bs=2G".split())
     
 
 workloads = [
-    "workloada",
-    "workloadb",
-    "workloadc",
-    "workloadd",
-    "workloadf",
-    "workloadau",
-    "workloadbu",
+#    "workloada",
+#    "workloadb",
+#    "workloadc",
+#    "workloadd",
+#    "workloadf",
+ #   "workloadau",
+ #   "workloadbu",
     "workloadcu",
-    "workloaddu",
-    "workloadfu",
+ #   "workloaddu",
+ #   "workloadfu",
     ]
 
-cache_size = 10*1024*1024*1024
+#cache_size = 10*1024*1024*1024
+cache_size = 1*1024*1024
 mode = "abt"
 #mode = "native"
-for nctx in [128, 256, 64]:
+
+#run(mode, "set", 1, 1, cache_size, "workloadfu")
+
+for nctx in [128]:
     for workload in workloads:
         run_clean()
         run(mode, "set", 1, 1, cache_size, workload)
-        run(mode, "get", 8, nctx, cache_size, workload)
+        run(mode, "get", 1, 1, cache_size, workload)
 
+#for nctx in [64,128,256]:
+#    for workload in workloads:
+#        run(mode, "get", 8, nctx, 1*1024*1024, workload)
+        
 #run(mode, "get", 8, 128, cache_size, "workloada")
 
 #run("abt", "get", 8, 128,    2*1024*1024*1024, "workloadcu")
