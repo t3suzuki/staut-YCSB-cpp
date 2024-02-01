@@ -11,7 +11,7 @@ def get_cmd(op, dbengine, n_th, cache_capacity, workload, dbname):
     if dbengine == "rocksdb":
         common_args = "-db rocksdb -P rocksdb/rocksdb.properties -p rocksdb.cache_size={} -p rocksdb.dbname={}".format(cache_capacity, dbname)
     elif dbengine == "wiredtiger":
-        common_args = "-db wiredtiger ".format()
+        common_args = "-db wiredtiger -P wiredtiger/wiredtiger.properties -p wiredtiger.cache_size={} -p wiredtiger.home={}".format(cache_capacity, dbname)
     common_args +=  " -P workloads/{} -p threadcount={} -p recordcount={} -p status=false -p zeropadding=20".format(workload, n_th, recordcount)
     
     if op == "set":
@@ -21,14 +21,14 @@ def get_cmd(op, dbengine, n_th, cache_capacity, workload, dbname):
     return cmd
 
 def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
-    print("mode={}, op={}, dbengine={}, n_core={}, n_th={}, cache_size={}ULL".format(mode, op, dbengine, n_core, n_th, cache_capacity))
+    print("mode={}, op={}, dbengine={}, n_core={}, n_th={}, cache_size={}, workload={}".format(mode, op, dbengine, n_core, n_th, cache_capacity, workload))
 
     drive_ids = ["0000:0f:00.0","0000:0e:00.0"]
     
     if mode == "abt":
         db_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-{}-abt/{}".format(dbengine, workload)
     else:
-        db_path = "/home/tomoya-s/mountpoint/tomoya-s/ycsb-{}-native-test/{}".format(dbengine, workload)
+        db_path = "/home/tomoya-s/mountpoint/tomoya-s/ycsb-{}-native-test_tmp2/{}".format(dbengine, workload)
         
     if op == "set":
         #print("We are modifying database {}. Are you Sure? (Y/N)".format(db_path))
@@ -48,14 +48,14 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
         make_flags.append("EXTRA_LDFLAGS=-L{}/build -ldl -lz -lsnappy -lzstd -lbz2 -llz4".format(ROCKSDB_PATH))
     elif dbengine == "wiredtiger":
         make_flags.append("BIND_WIREDTIGER=1")
-        make_flags.append("EXTRA_CXXFLAGS=-I{}/src/include -I{}/build/include -DADD_SCHED_YIELD={}".format(WIREDTIGER_PATH, add_sched_yield))
+        make_flags.append("EXTRA_CXXFLAGS=-I{}/src/include -I{}/build/include -DADD_SCHED_YIELD={} -DWT_SESSION_MAX={}".format(WIREDTIGER_PATH, WIREDTIGER_PATH, add_sched_yield, n_th))
         make_flags.append("EXTRA_LDFLAGS=-L{}/build -lwiredtiger".format(WIREDTIGER_PATH))
 
-    subprocess.run("touch core/client.h".split())
-    subprocess.run("make -j".split() + make_flags)
+    print(make_flags)
+    subprocess.run("make -j -B".split() + make_flags)
         
-    subprocess.run("sudo chcpu -e 1-{}".format(n_core-1).split())
-    subprocess.run("sudo chcpu -d {}-39".format(n_core).split())
+    #subprocess.run("sudo chcpu -e 1-{}".format(n_core-1).split())
+    #subprocess.run("sudo chcpu -d {}-39".format(n_core).split())
     
     my_env = os.environ.copy()
     if mode == "abt":
@@ -114,18 +114,21 @@ workloads = [
 #    "workloadfu",
     ]
 
-#cache_size = 10*1024*1024*1024
-cache_size = 1*1024*1024
+cache_size = 10*1024*1024*1024
+#cache_size = 1*1024*1024
 #mode = "abt"
 mode = "native"
+
+dbengine = "wiredtiger"
+#dbengine = "rocksdb"
 
 #run(mode, "set", 1, 1, cache_size, "workloadfu")
 
 for nctx in [128]:
     for workload in workloads:
 #        run_clean()
-        run(mode, "set", "rocksdb", 1, 1, cache_size, workload)
-        run(mode, "get", "rocksdb", 8, nctx, cache_size, workload)
+        run(mode, "set", dbengine, 1, 1, cache_size, workload)
+        run(mode, "get", dbengine, 8, nctx, cache_size, workload)
 
 #for nctx in [64,128,256]:
 #    for workload in workloads:
