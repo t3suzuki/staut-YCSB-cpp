@@ -117,6 +117,7 @@ void WTDB::Init(){
   {
     // 1. Setup wiredtiger home directory
     const std::string &home = props.GetProperty(PROP_HOME, PROP_HOME_DEFAULT);
+    std::cout << home << std::endl;
     if(home.empty()){
       throw utils::Exception(WT_PREFIX " home is missing");
     }
@@ -135,7 +136,10 @@ void WTDB::Init(){
       if(!direct_io.empty())  db_config += "direct_io=" + direct_io + ",";
       if(!in_memory.empty())  db_config += "in_memory=" + in_memory + ",";
     }
-    { // 2.2 LSM Manager
+    db_config += "eviction=(threads_min=2,threads_max=2),eviction_target=80,";
+    db_config += "session_max=" + std::to_string(WT_SESSION_MAX) + ",";
+    
+    /*{ // 2.2 LSM Manager
       std::string lsm_config;
       const std::string &lsm_merge = props.GetProperty(PROP_LSM_MGR_MERGE, PROP_LSM_MGR_MERGE_DEFAULT);
       const std::string &lsm_max_workers = props.GetProperty(PROP_LSM_MGR_MAX_WORKERS, PROP_LSM_MGR_MAX_WORKERS_DEFAULT);
@@ -143,7 +147,7 @@ void WTDB::Init(){
       if(!lsm_max_workers.empty())  lsm_config += "worker_thread_max=" + lsm_max_workers;
       
       if(!lsm_config.empty()) db_config += "lsm_manager=(" + lsm_config + ")";
-    }
+      }*/
     // db_config += ",block_cache=(enabled=true,hashsize=10K,size=300MB,system_ram=300MB,type=DRAM)";
     std::cout<<"db config: "<<db_config<<std::endl;
     error_check(wiredtiger_open(home.c_str(), NULL, db_config.c_str(), &conn_));
@@ -159,11 +163,11 @@ void WTDB::Init(){
       const std::string &alloc_size = props.GetProperty(PROP_BLK_MGR_ALLOCATION_SIZE, PROP_BLK_MGR_ALLOCATION_SIZE_DEFAULT);
       const std::string &compressor = props.GetProperty(PROP_BLK_MGR_COMPRESSOR, PROP_BLK_MGR_COMPRESSOR_DEFAULT);
       if(!alloc_size.empty()) table_config += "allocation_size=" + alloc_size + ",";
-      if(!compressor.empty() && !std::set<std::string>{"snappy", "lz4", "zlib", "zstd"}.count(compressor)){
+      if(!compressor.empty() && !std::set<std::string>{"snappy", "lz4", "zlib", "zstd", "none"}.count(compressor)){
         throw utils::Exception("unknown compressor name");
       } else table_config += "block_compressor=" + compressor + ",";
     }
-    { // 1.2 LSM relevant
+    /*{ // 1.2 LSM relevant
       std::string lsm_config;
       const std::string &bloom_bit_count = props.GetProperty(PROP_BLK_MGR_BLOOM_BIT_COUNT, PROP_BLK_MGR_BLOOM_BIT_COUNT_DEFAULT);
       const std::string &bloom_hash_count = props.GetProperty(PROP_BLK_MGR_BLOOM_HASH_COUNT, PROP_BLK_MGR_BLOOM_HASH_COUNT_DEFAULT);
@@ -175,7 +179,7 @@ void WTDB::Init(){
       if(!chunk_size.empty())       lsm_config += "chunk_size=" + chunk_size;
 
       if(!lsm_config.empty()) table_config += "lsm=(" + lsm_config + "),";
-    }
+      }*/
     { // 1.3 BTree nodes
       const std::string &internal_page_max = props.GetProperty(PROP_BLK_MGR_BTREE_INTERNAL_PAGE_MAX, PROP_BLK_MGR_BTREE_INTERNAL_PAGE_MAX_DEFAULT);
       const std::string &leaf_key_max = props.GetProperty(PROP_BLK_MGR_BTREE_LEAF_KEY_MAX, PROP_BLK_MGR_BTREE_LEAF_KEY_MAX_DEFAULT);

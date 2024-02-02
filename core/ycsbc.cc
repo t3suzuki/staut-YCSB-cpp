@@ -209,8 +209,7 @@ int main(const int argc, const char *argv[]) {
 
     assert((int)client_threads.size() == num_threads);
 
-    const int time_sec = 300;
-    //const int time_sec = 10;
+    const int time_sec = TIME_SEC;
     for (int t = 0; t < time_sec; ++t) {
       printf("%d/%d\n", t, time_sec);
       sleep(1);

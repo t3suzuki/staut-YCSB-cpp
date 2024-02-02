@@ -6,13 +6,17 @@ MYLIB_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/pthabt/newlib"
 ROCKSDB_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/rocksdb"
 WIREDTIGER_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/wiredtiger"
 
-def get_cmd(op, dbengine, n_th, cache_capacity, workload, dbname):
+def get_cmd(mode, op, dbengine, n_th, cache_capacity, workload, dbname):
     recordcount = 1*1000*1000
     if dbengine == "rocksdb":
         common_args = "-db rocksdb -P rocksdb/rocksdb.properties -p rocksdb.cache_size={} -p rocksdb.dbname={}".format(cache_capacity, dbname)
     elif dbengine == "wiredtiger":
         common_args = "-db wiredtiger -P wiredtiger/wiredtiger.properties -p wiredtiger.cache_size={} -p wiredtiger.home={}".format(cache_capacity, dbname)
-    common_args +=  " -P workloads/{} -p threadcount={} -p recordcount={} -p status=false -p zeropadding=20".format(workload, n_th, recordcount)
+    common_args +=  " -P workloads/{} -p threadcount={} -p recordcount={} -p zeropadding=20".format(workload, n_th, recordcount)
+    if mode == "native":
+        common_args += " -p status=true"
+    else:
+        common_args += " -p status=false"
     
     if op == "set":
         cmd = "./ycsb -load {}".format(common_args)
@@ -28,7 +32,7 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
     if mode == "abt":
         db_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-{}-abt/{}".format(dbengine, workload)
     else:
-        db_path = "/home/tomoya-s/mountpoint/tomoya-s/ycsb-{}-native-test_tmp2/{}".format(dbengine, workload)
+        db_path = "/home/tomoya-s/mountpoint/tomoya-s/ycsb-{}-native-test_tmp3/{}".format(dbengine, workload)
         
     if op == "set":
         #print("We are modifying database {}. Are you Sure? (Y/N)".format(db_path))
@@ -41,14 +45,15 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
     else:
         add_sched_yield = 1
 
+    time_sec = 30
     make_flags = []
     if dbengine == "rocksdb":
         make_flags.append("BIND_ROCKSDB=1")
-        make_flags.append("EXTRA_CXXFLAGS=-I{}/include -DADD_SCHED_YIELD={}".format(ROCKSDB_PATH, add_sched_yield))
+        make_flags.append("EXTRA_CXXFLAGS=-I{}/include -DADD_SCHED_YIELD={} -DTIME_SEC={}".format(ROCKSDB_PATH, add_sched_yield, time_sec))
         make_flags.append("EXTRA_LDFLAGS=-L{}/build -ldl -lz -lsnappy -lzstd -lbz2 -llz4".format(ROCKSDB_PATH))
     elif dbengine == "wiredtiger":
         make_flags.append("BIND_WIREDTIGER=1")
-        make_flags.append("EXTRA_CXXFLAGS=-I{}/src/include -I{}/build/include -DADD_SCHED_YIELD={} -DWT_SESSION_MAX={}".format(WIREDTIGER_PATH, WIREDTIGER_PATH, add_sched_yield, n_th))
+        make_flags.append("EXTRA_CXXFLAGS=-I{}/src/include -I{}/build/include -DADD_SCHED_YIELD={} -DTIME_SEC={} -DWT_SESSION_MAX={}".format(WIREDTIGER_PATH, WIREDTIGER_PATH, add_sched_yield, time_sec, n_th))
         make_flags.append("EXTRA_LDFLAGS=-L{}/build -lwiredtiger".format(WIREDTIGER_PATH))
 
     print(make_flags)
@@ -73,7 +78,7 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
         #my_env["ABT_INITIAL_NUM_SUB_XSTREAMS"] = str(n_th + 16)
         my_env["MYFS_SUPERBLOCK_PATH"] = "/root/myfs_superblock"
         #my_env["LIBDEBUG"] = MYLIB_PATH + "/debug.so"
-    cmd = get_cmd(op, dbengine, n_th, cache_capacity, workload, db_path)
+    cmd = get_cmd(mode, op, dbengine, n_th, cache_capacity, workload, db_path)
     print(cmd)
     
     res = subprocess.run(cmd.split(), env=my_env, capture_output=False)
@@ -102,19 +107,19 @@ def run_clean():
     
 
 workloads = [
-    "workloada",
+#    "workloada",
 #    "workloadb",
 #    "workloadc",
 #    "workloadd",
 #    "workloadf",
 #    "workloadau",
 #    "workloadbu",
-#    "workloadcu",
+    "workloadcu",
 #    "workloaddu",
 #    "workloadfu",
     ]
 
-cache_size = 10*1024*1024*1024
+cache_size = 1*1024*1024*1024
 #cache_size = 1*1024*1024
 #mode = "abt"
 mode = "native"
@@ -127,8 +132,8 @@ dbengine = "wiredtiger"
 for nctx in [128]:
     for workload in workloads:
 #        run_clean()
-        run(mode, "set", dbengine, 1, 1, cache_size, workload)
-        run(mode, "get", dbengine, 8, nctx, cache_size, workload)
+        run(mode, "set", dbengine, 8, 128, cache_size, workload)
+#        run(mode, "get", dbengine, 8, nctx, cache_size, workload)
 
 #for nctx in [64,128,256]:
 #    for workload in workloads:
