@@ -136,7 +136,7 @@ void WTDB::Init(){
       if(!direct_io.empty())  db_config += "direct_io=" + direct_io + ",";
       if(!in_memory.empty())  db_config += "in_memory=" + in_memory + ",";
     }
-    db_config += "eviction=(threads_min=2,threads_max=2),eviction_target=80,";
+    db_config += "eviction=(threads_min=1,threads_max=1),eviction_target=80,";
     db_config += "session_max=" + std::to_string(WT_SESSION_MAX) + ",";
     
     /*{ // 2.2 LSM Manager
@@ -180,6 +180,7 @@ void WTDB::Init(){
 
       if(!lsm_config.empty()) table_config += "lsm=(" + lsm_config + "),";
       }*/
+    //table_config += "exclusive=true,leaf_value_max=64MB,memory_page_max=10m,split_pct=90,";
     { // 1.3 BTree nodes
       const std::string &internal_page_max = props.GetProperty(PROP_BLK_MGR_BTREE_INTERNAL_PAGE_MAX, PROP_BLK_MGR_BTREE_INTERNAL_PAGE_MAX_DEFAULT);
       const std::string &leaf_key_max = props.GetProperty(PROP_BLK_MGR_BTREE_LEAF_KEY_MAX, PROP_BLK_MGR_BTREE_LEAF_KEY_MAX_DEFAULT);
