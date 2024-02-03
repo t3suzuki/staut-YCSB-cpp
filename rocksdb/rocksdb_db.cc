@@ -204,7 +204,10 @@ void RocksdbDB::Init() {
 #ifdef USE_MERGEUPDATE
   opt.merge_operator.reset(new YCSBUpdateMerge);
 #endif
-  //opt.disable_auto_compactions = 1;
+
+#if DISABLE_AUTO_COMPACTIONS
+  opt.disable_auto_compactions = 1;
+#endif
 
   rocksdb::Status s;
   if (props.GetProperty(PROP_DESTROY, PROP_DESTROY_DEFAULT) == "true") {
