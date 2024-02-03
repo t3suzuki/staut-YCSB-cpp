@@ -6,13 +6,14 @@ MYLIB_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/pthabt/newlib"
 ROCKSDB_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/rocksdb"
 WIREDTIGER_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/wiredtiger"
 
+RECORDCOUNT = 10*1000*1000
+
 def get_cmd(mode, op, dbengine, n_th, cache_capacity, workload, dbname):
-    recordcount = 10*1000*1000
     if dbengine == "rocksdb":
         common_args = "-db rocksdb -P rocksdb/rocksdb.properties -p rocksdb.cache_size={} -p rocksdb.dbname={}".format(cache_capacity, dbname)
     elif dbengine == "wiredtiger":
         common_args = "-db wiredtiger -P wiredtiger/wiredtiger.properties -p wiredtiger.cache_size={} -p wiredtiger.home={}".format(cache_capacity, dbname)
-    common_args +=  " -P workloads/{} -p threadcount={} -p recordcount={} -p zeropadding=20".format(workload, n_th, recordcount)
+    common_args +=  " -P workloads/{} -p threadcount={} -p recordcount={} -p zeropadding=20".format(workload, n_th, RECORDCOUNT)
     if mode == "native":
         common_args += " -p status=true"
     else:
@@ -30,15 +31,9 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
     drive_ids = ["0000:0f:00.0","0000:0e:00.0"]
     
     if mode == "abt":
-        db_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-{}-abt/{}".format(dbengine, workload)
+        db_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-{}-abt-{}".format(dbengine, RECORDCOUNT)
     else:
-        db_path = "/home/tomoya-s/mountpoint/tomoya-s/ycsb-{}-native-test_tmp3/{}".format(dbengine, workload)
-        
-    if op == "set":
-        #print("We are modifying database {}. Are you Sure? (Y/N)".format(db_path))
-        #x = input()
-        #assert x == "y"
-        subprocess.run("rm -rf {}".format(db_path).split())
+        db_path = "/home/tomoya-s/mountpoint/tomoya-s/ycsb-{}-native-{}".format(dbengine, RECORDCOUNT)
         
     if mode == "native":
         add_sched_yield = 0
@@ -61,6 +56,16 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
         
     subprocess.run("sudo chcpu -e 1-{}".format(n_core-1).split())
     subprocess.run("sudo chcpu -d {}-39".format(n_core).split())
+
+    workloads_dir = "./workloads"
+    if op == "get":
+        cp_workload_cmd = "cp {workloads_dir}/{workload} {workloads_dir}/myworkload".format(workloads_dir=workloads_dir, workload=workload)
+        print(cp_workload_cmd)
+        subprocess.run(cp_workload_cmd.split())
+        subprocess.run("rm -rf {db_path}/myworkload".format(db_path=db_path).split())
+        cp_db_cmd = "cp -R {db_path}.back/myworkload {db_path}/".format(db_path=db_path)
+        print(cp_db_cmd)
+        subprocess.run(cp_db_cmd.split())
     
     my_env = os.environ.copy()
     if mode == "abt":
@@ -70,7 +75,7 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
         my_env["LD_PRELOAD"] = MYLIB_PATH + "/mylib.so"
         my_env["ABT_PREEMPTION_INTERVAL_USEC"] = "10000000"
         if dbengine == "rocksdb":
-            my_env["HOOKED_ROCKSDB_DIR"] = db_path
+            my_env["HOOKED_ROCKSDB_DIR"] = db_path + "/myworkload"
             my_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:/home/tomoya-s/mountpoint2/tomoya-s/rocksdb/build"
         elif dbengine == "wiredtiger":
             my_env["HOOKED_FILENAME"] = db_path + "/ycsbc.wt"
@@ -79,7 +84,7 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
         #my_env["ABT_INITIAL_NUM_SUB_XSTREAMS"] = str(n_th + 16)
         my_env["MYFS_SUPERBLOCK_PATH"] = "/root/myfs_superblock"
         #my_env["LIBDEBUG"] = MYLIB_PATH + "/debug.so"
-    cmd = get_cmd(mode, op, dbengine, n_th, cache_capacity, workload, db_path)
+    cmd = get_cmd(mode, op, dbengine, n_th, cache_capacity, workload, db_path + "/myworkload")
     print(cmd)
     
     res = subprocess.run(cmd.split(), env=my_env, capture_output=False)
@@ -122,18 +127,20 @@ workloads = [
 
 cache_size = 10*1024*1024*1024
 #cache_size = 1*1024*1024
-mode = "abt"
-#mode = "native"
+#mode = "abt"
+mode = "native"
 
-dbengine = "wiredtiger"
-#dbengine = "rocksdb"
+#dbengine = "wiredtiger"
+dbengine = "rocksdb"
 
 #run(mode, "set", 1, 1, cache_size, "workloadfu")
 
+#run(mode, "set", dbengine, 1, 1, cache_size, "myworkload")
+
 for nctx in [128]:
     for workload in workloads:
-        run_clean()
-        run(mode, "set", dbengine, 1, 1, cache_size, workload)
+#        run_clean()
+#        run(mode, "set", dbengine, 1, 1, cache_size, workload)
         run(mode, "get", dbengine, 8, 128, cache_size, workload)
 
 #for nctx in [64,128,256]:
