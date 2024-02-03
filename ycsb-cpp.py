@@ -1,5 +1,5 @@
 import subprocess, os
-
+import time
 
 ABT_PATH = "/home/tomoya-s/work/github/ppopp21-preemption-artifact/argobots/install"
 MYLIB_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/pthabt/newlib"
@@ -42,7 +42,7 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
         add_sched_yield = 1
 
     time_sec = 300
-    time_warmup_sec = 20
+    time_warmup_sec = 60
     make_flags = []
     if dbengine == "rocksdb":
         make_flags.append("BIND_ROCKSDB=1")
@@ -61,14 +61,15 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
 
     workloads_dir = "./workloads"
     if op == "get":
-#        cp_workload_cmd = "cp {workloads_dir}/{workload} {workloads_dir}/myworkload".format(workloads_dir=workloads_dir, workload=workload)
-#        print(cp_workload_cmd)
-#        subprocess.run(cp_workload_cmd.split())
-#        subprocess.run("rm -rf {db_path}/myworkload".format(db_path=db_path).split())
-#        cp_db_cmd = "cp -R {db_org_path}/myworkload {db_path}/".format(db_org_path=db_org_path,db_path=db_path)
-#        print(cp_db_cmd)
-#        subprocess.run(cp_db_cmd.split())
+        cp_workload_cmd = "cp {workloads_dir}/{workload} {workloads_dir}/myworkload".format(workloads_dir=workloads_dir, workload=workload)
+        print(cp_workload_cmd)
+        subprocess.run(cp_workload_cmd.split())
+        subprocess.run("rm -rf {db_path}/myworkload".format(db_path=db_path).split())
+        cp_db_cmd = "cp -R {db_org_path}/myworkload {db_path}/".format(db_org_path=db_org_path,db_path=db_path)
+        print(cp_db_cmd)
+        subprocess.run(cp_db_cmd.split())
         subprocess.run("echo 3 > /proc/sys/vm/drop_caches".split())
+        time.sleep(10)
     elif op == "set":
         subprocess.run("rm -rf {db_path}/myworkload".format(db_path=db_path).split())
         subprocess.run("mkdir -p {db_path}/myworkload".format(db_path=db_path).split())
@@ -121,17 +122,16 @@ def run_clean():
     
 
 workloads = [
-"workloadc",
-#    "workloada",
-#    "workloadb",
-#    "workloadc",
-#    "workloadd",
-#    "workloadf",
-#    "workloadau",
-#    "workloadbu",
-#    "workloadcu",
-#    "workloaddu",
-#    "workloadfu",
+    "workloada",
+    "workloadb",
+    "workloadc",
+    "workloadd",
+    "workloadf",
+    "workloadau",
+    "workloadbu",
+    "workloadcu",
+    "workloaddu",
+    "workloadfu",
     ]
 
 cache_size = 10*1024*1024*1024
@@ -146,12 +146,12 @@ dbengine = "rocksdb"
 
 #run(mode, "set", dbengine, 1, 1, cache_size, "myworkload")
 
-run(mode, "get", dbengine, 8, 128, cache_size, "workloadc")
-if False:
+#run(mode, "get", dbengine, 8, 128, cache_size, "workloadc")
+if True:
     for cache_size in [1*1024*1024, 10*1024*1024*1024]:
         for nctx in [128]:
             for workload in workloads:
-                for i in [0,1,2,3]:
+                for i in [0,1]:
                     run(mode, "get", dbengine, 8, 128, cache_size, workload)
 
 #for nctx in [64,128,256]:
