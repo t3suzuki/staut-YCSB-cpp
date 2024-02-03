@@ -165,6 +165,52 @@ int main(const int argc, const char *argv[]) {
   measurements->Reset();
   std::this_thread::sleep_for(std::chrono::seconds(stoi(props.GetProperty("sleepafterload", "0"))));
 
+  // warmup phase
+  if (do_transaction) {
+    ycsbc::utils::CountDownLatch latch(num_threads);
+    ycsbc::utils::Timer<double> timer;
+    std::vector<std::future<int>> client_threads;
+
+    timer.Start();
+    std::future<void> status_future;
+    if (show_status) {
+      status_future = std::async(std::launch::async, StatusThread,
+                                 measurements, &latch, status_interval);
+    }
+
+    volatile bool quit = false;
+    for (int i = 0; i < num_threads; ++i) {
+      ycsbc::utils::RateLimiter *rlim = nullptr;
+      client_threads.emplace_back(std::async(std::launch::async, ycsbc::ClientThread, dbs[i], &wl,
+                                             std::numeric_limits<int>::max(), false, !do_load, false, &latch, rlim, &quit));
+    }
+
+    assert((int)client_threads.size() == num_threads);
+
+    const int time_warmup_sec = TIME_WARMUP_SEC;
+    for (int t = 0; t < time_warmup_sec; ++t) {
+      printf("warmup %d/%d\n", t, time_warmup_sec);
+      sleep(1);
+    }
+    quit = true;
+    
+    int sum = 0;
+    for (auto &n : client_threads) {
+      assert(n.valid());
+      sum += n.get();
+    }
+    double runtime = timer.End();
+
+    if (show_status) {
+      status_future.wait();
+    }
+
+    std::cout << "Run runtime(sec): " << runtime << std::endl;
+    std::cout << "Run operations(ops): " << sum << std::endl;
+    std::cout << "Run throughput(ops/sec): " << sum / runtime << std::endl;
+  }
+  
+  measurements->Reset();
 
   // transaction phase
   if (do_transaction) {
@@ -185,33 +231,18 @@ int main(const int argc, const char *argv[]) {
                                  measurements, &latch, status_interval);
     }
     std::vector<std::future<int>> client_threads;
-    std::vector<ycsbc::utils::RateLimiter *> rate_limiters;
     volatile bool quit = false;
     for (int i = 0; i < num_threads; ++i) {
-      int thread_ops = total_ops / num_threads;
-      if (i < total_ops % num_threads) {
-        thread_ops++;
-      }
       ycsbc::utils::RateLimiter *rlim = nullptr;
-      if (ops_limit > 0 || rate_file != "") {
-        int64_t per_thread_ops = ops_limit / num_threads;
-        rlim = new ycsbc::utils::RateLimiter(per_thread_ops, per_thread_ops);
-      }
-      rate_limiters.push_back(rlim);
       client_threads.emplace_back(std::async(std::launch::async, ycsbc::ClientThread, dbs[i], &wl,
                                              std::numeric_limits<int>::max(), false, !do_load, true, &latch, rlim, &quit));
-    }
-
-    std::future<void> rlim_future;
-    if (rate_file != "") {
-      rlim_future = std::async(std::launch::async, RateLimitThread, rate_file, rate_limiters, &latch);
     }
 
     assert((int)client_threads.size() == num_threads);
 
     const int time_sec = TIME_SEC;
     for (int t = 0; t < time_sec; ++t) {
-      printf("%d/%d\n", t, time_sec);
+      printf("run %d/%d\n", t, time_sec);
       sleep(1);
     }
     quit = true;

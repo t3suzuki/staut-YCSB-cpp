@@ -31,8 +31,9 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
     drive_ids = ["0000:0f:00.0","0000:0e:00.0"]
     
     if mode == "abt":
-        db_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-{}-abt-{}".format(dbengine, RECORDCOUNT)
+        db_org_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-{}-abt-{}".format(dbengine, RECORDCOUNT)
     else:
+        db_org_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-{}-native-{}.back".format(dbengine, RECORDCOUNT)
         db_path = "/home/tomoya-s/mountpoint/tomoya-s/ycsb-{}-native-{}".format(dbengine, RECORDCOUNT)
         
     if mode == "native":
@@ -41,10 +42,11 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
         add_sched_yield = 1
 
     time_sec = 300
+    time_warmup_sec = 20
     make_flags = []
     if dbengine == "rocksdb":
         make_flags.append("BIND_ROCKSDB=1")
-        make_flags.append("EXTRA_CXXFLAGS=-I{}/include -DADD_SCHED_YIELD={} -DTIME_SEC={}".format(ROCKSDB_PATH, add_sched_yield, time_sec))
+        make_flags.append("EXTRA_CXXFLAGS=-I{}/include -DADD_SCHED_YIELD={} -DTIME_SEC={} -DTIME_WARMUP_SEC={}".format(ROCKSDB_PATH, add_sched_yield, time_sec, time_warmup_sec))
         make_flags.append("EXTRA_LDFLAGS=-L{}/build -ldl -lz -lsnappy -lzstd -lbz2 -llz4".format(ROCKSDB_PATH))
     elif dbengine == "wiredtiger":
         make_flags.append("BIND_WIREDTIGER=1")
@@ -59,13 +61,14 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
 
     workloads_dir = "./workloads"
     if op == "get":
-        cp_workload_cmd = "cp {workloads_dir}/{workload} {workloads_dir}/myworkload".format(workloads_dir=workloads_dir, workload=workload)
-        print(cp_workload_cmd)
-        subprocess.run(cp_workload_cmd.split())
-        subprocess.run("rm -rf {db_path}/myworkload".format(db_path=db_path).split())
-        cp_db_cmd = "cp -R {db_path}.back/myworkload {db_path}/".format(db_path=db_path)
-        print(cp_db_cmd)
-        subprocess.run(cp_db_cmd.split())
+#        cp_workload_cmd = "cp {workloads_dir}/{workload} {workloads_dir}/myworkload".format(workloads_dir=workloads_dir, workload=workload)
+#        print(cp_workload_cmd)
+#        subprocess.run(cp_workload_cmd.split())
+#        subprocess.run("rm -rf {db_path}/myworkload".format(db_path=db_path).split())
+#        cp_db_cmd = "cp -R {db_org_path}/myworkload {db_path}/".format(db_org_path=db_org_path,db_path=db_path)
+#        print(cp_db_cmd)
+#        subprocess.run(cp_db_cmd.split())
+        subprocess.run("echo 3 > /proc/sys/vm/drop_caches".split())
     elif op == "set":
         subprocess.run("rm -rf {db_path}/myworkload".format(db_path=db_path).split())
         subprocess.run("mkdir -p {db_path}/myworkload".format(db_path=db_path).split())
@@ -109,25 +112,26 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
             res = subprocess.run("./compact", env=comp_env)
         else:
             res = subprocess.run("./compact")
-        subprocess.run("rm -rf {db_path}.back".format(db_path=db_path).split())
-        subprocess.run("mkdir {db_path}.back".format(db_path=db_path).split())
-        subprocess.run("cp -R {db_path}/myworkload {db_path}.back".format(db_path=db_path).split())
+        subprocess.run("rm -rf {db_org_path}".format(db_org_path=db_org_path).split())
+        subprocess.run("mkdir {db_org_path}".format(db_org_path=db_org_path).split())
+        subprocess.run("cp -R {db_path}/myworkload {db_org_path}".format(db_path=db_path, db_org_path=db_org_path).split())
     
 def run_clean():
     subprocess.run("dd if=/dev/zero of=/root/myfs_superblock count=1 bs=4G".split())
     
 
 workloads = [
-    "workloada",
-    "workloadb",
-    "workloadc",
-    "workloadd",
-    "workloadf",
-    "workloadau",
-    "workloadbu",
-    "workloadcu",
-    "workloaddu",
-    "workloadfu",
+"workloadc",
+#    "workloada",
+#    "workloadb",
+#    "workloadc",
+#    "workloadd",
+#    "workloadf",
+#    "workloadau",
+#    "workloadbu",
+#    "workloadcu",
+#    "workloaddu",
+#    "workloadfu",
     ]
 
 cache_size = 10*1024*1024*1024
@@ -140,9 +144,10 @@ dbengine = "rocksdb"
 
 #run(mode, "set", 1, 1, cache_size, "workloadfu")
 
-run(mode, "set", dbengine, 1, 1, cache_size, "myworkload")
+#run(mode, "set", dbengine, 1, 1, cache_size, "myworkload")
 
-if True:
+run(mode, "get", dbengine, 8, 128, cache_size, "workloadc")
+if False:
     for cache_size in [1*1024*1024, 10*1024*1024*1024]:
         for nctx in [128]:
             for workload in workloads:
