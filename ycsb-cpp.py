@@ -6,7 +6,7 @@ MYLIB_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/pthabt/newlib"
 ROCKSDB_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/rocksdb"
 WIREDTIGER_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/wiredtiger"
 
-RECORDCOUNT = 10*1000*1000
+RECORDCOUNT = 100*1000*1000
 
 def get_cmd(mode, op, dbengine, n_th, cache_capacity, workload, dbname):
     if dbengine == "rocksdb":
@@ -40,7 +40,7 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
     else:
         add_sched_yield = 1
 
-    time_sec = 30
+    time_sec = 300
     make_flags = []
     if dbengine == "rocksdb":
         make_flags.append("BIND_ROCKSDB=1")
@@ -66,7 +66,10 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
         cp_db_cmd = "cp -R {db_path}.back/myworkload {db_path}/".format(db_path=db_path)
         print(cp_db_cmd)
         subprocess.run(cp_db_cmd.split())
-    
+    elif op == "set":
+        subprocess.run("rm -rf {db_path}/myworkload".format(db_path=db_path).split())
+        subprocess.run("mkdir -p {db_path}/myworkload".format(db_path=db_path).split())
+        
     my_env = os.environ.copy()
     if mode == "abt":
         mylib_build_cmd = "make -C {} ABT_PATH={} N_CORE={} ND={} USE_PREEMPT=0".format(MYLIB_PATH, ABT_PATH, n_core, len(drive_ids))
@@ -106,23 +109,25 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
             res = subprocess.run("./compact", env=comp_env)
         else:
             res = subprocess.run("./compact")
-
+        subprocess.run("rm -rf {db_path}.back".format(db_path=db_path).split())
+        subprocess.run("mkdir {db_path}.back".format(db_path=db_path).split())
+        subprocess.run("cp -R {db_path}/myworkload {db_path}.back".format(db_path=db_path).split())
     
 def run_clean():
     subprocess.run("dd if=/dev/zero of=/root/myfs_superblock count=1 bs=4G".split())
     
 
 workloads = [
-#    "workloada",
-#    "workloadb",
-#    "workloadc",
-#    "workloadd",
-#    "workloadf",
-#    "workloadau",
-#    "workloadbu",
+    "workloada",
+    "workloadb",
+    "workloadc",
+    "workloadd",
+    "workloadf",
+    "workloadau",
+    "workloadbu",
     "workloadcu",
-#    "workloaddu",
-#    "workloadfu",
+    "workloaddu",
+    "workloadfu",
     ]
 
 cache_size = 10*1024*1024*1024
@@ -135,13 +140,14 @@ dbengine = "rocksdb"
 
 #run(mode, "set", 1, 1, cache_size, "workloadfu")
 
-#run(mode, "set", dbengine, 1, 1, cache_size, "myworkload")
+run(mode, "set", dbengine, 1, 1, cache_size, "myworkload")
 
-for nctx in [128]:
-    for workload in workloads:
-#        run_clean()
-#        run(mode, "set", dbengine, 1, 1, cache_size, workload)
-        run(mode, "get", dbengine, 8, 128, cache_size, workload)
+if True:
+    for cache_size in [1*1024*1024, 10*1024*1024*1024]:
+        for nctx in [128]:
+            for workload in workloads:
+                for i in [0,1,2,3]:
+                    run(mode, "get", dbengine, 8, 128, cache_size, workload)
 
 #for nctx in [64,128,256]:
 #    for workload in workloads:
