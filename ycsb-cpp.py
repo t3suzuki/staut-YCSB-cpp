@@ -6,9 +6,12 @@ MYLIB_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/pthabt/newlib"
 ROCKSDB_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/rocksdb"
 WIREDTIGER_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/wiredtiger"
 
-RECORDCOUNT = 10*1000*1000
+ABT_BACKUP_PATH = "/home/tomoya-s/work/run_rocksdb/staut/trial/abt_backup"
 
-USE_BACKUP = False
+#RECORDCOUNT = 300*1000
+RECORDCOUNT = 100*1000*1000
+
+USE_BACKUP = True
 
 def get_cmd(mode, op, dbengine, n_th, cache_capacity, workload, dbname):
     if dbengine == "rocksdb":
@@ -33,15 +36,13 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
     drive_ids = ["0000:0f:00.0","0000:0e:00.0"]
     
     if mode == "abt":
-        db_org_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-{}-abt-{}".format(dbengine, RECORDCOUNT)
+        if USE_BACKUP:
+            db_org_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-{}-abt-{}.back".format(dbengine, RECORDCOUNT)
         db_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-{}-abt-{}".format(dbengine, RECORDCOUNT)
     else:
         if USE_BACKUP:
             db_org_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-{}-native-{}.back".format(dbengine, RECORDCOUNT)
-            db_path = "/home/tomoya-s/mountpoint/tomoya-s/ycsb-{}-native-{}".format(dbengine, RECORDCOUNT)
-        else:
-            db_org_path = "/home/tomoya-s/mountpoint/tomoya-s/ycsb-{}-native-{}".format(dbengine, RECORDCOUNT)
-            db_path = "/home/tomoya-s/mountpoint/tomoya-s/ycsb-{}-native-{}".format(dbengine, RECORDCOUNT)
+        db_path = "/home/tomoya-s/mountpoint/tomoya-s/ycsb-{}-native-{}".format(dbengine, RECORDCOUNT)
         
     if mode == "native":
         add_sched_yield = 0
@@ -144,6 +145,9 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
         if USE_BACKUP:
             subprocess.run("rm -rf {db_org_path}".format(db_org_path=db_org_path).split())
             subprocess.run("cp -R {db_path} {db_org_path}".format(db_path=db_path, db_org_path=db_org_path).split())
+            if mode == "abt":
+                subprocess.run("cp /root/myfs_superblock {db_path_org}".format(db_path_org=db_path_org).split())
+                subprocess.run(ABT_BACKUP)
     
 def run_clean():
     subprocess.run("dd if=/dev/zero of=/root/myfs_superblock count=1 bs=4G".split())
@@ -164,14 +168,15 @@ workloads = [
 
 #cache_size = 10*1024*1024*1024
 cache_size = 1*1024*1024
-mode = "abt"
-#mode = "native"
+#mode = "abt"
+mode = "native"
 
 #dbengine = "wiredtiger"
 dbengine = "rocksdb"
 
 #run(mode, "set", 1, 1, cache_size, "workloadfu")
 
+#run_clean()
 #run(mode, "set", dbengine, 1, 1, cache_size, "workloadau")
 #subprocess.run("/home/tomoya-s/work/run_rocksdb/staut/trial/a.out")
 
