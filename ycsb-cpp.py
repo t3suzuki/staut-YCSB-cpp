@@ -6,9 +6,9 @@ MYLIB_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/pthabt/newlib"
 ROCKSDB_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/rocksdb"
 WIREDTIGER_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/wiredtiger"
 
-ABT_BACKUP_PATH = "/home/tomoya-s/work/run_rocksdb/staut/trial/abt_backup"
+ABT_RESTORE_PATH = "/home/tomoya-s/work/run_rocksdb/staut/abt_backup/abt_restore"
 
-#RECORDCOUNT = 300*1000
+#RECORDCOUNT = 2*1000*1000
 RECORDCOUNT = 100*1000*1000
 
 USE_BACKUP = True
@@ -38,6 +38,7 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
     if mode == "abt":
         if USE_BACKUP:
             db_org_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-{}-abt-{}.back".format(dbengine, RECORDCOUNT)
+            db_dat_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-{}-abt-{}.dat".format(dbengine, RECORDCOUNT)
         db_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-{}-abt-{}".format(dbengine, RECORDCOUNT)
     else:
         if USE_BACKUP:
@@ -80,6 +81,12 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
             cp_workload_cmd = "cp {workloads_dir}/{workload} {workloads_dir}/cp_workload".format(workloads_dir=workloads_dir, workload=workload)
             print(cp_workload_cmd)
             subprocess.run(cp_workload_cmd.split())
+
+            if mode == "abt":
+                restore_env = os.environ.copy()
+                restore_env["DRIVE_IDS"] = "_".join(drive_ids)
+                subprocess.run(ABT_RESTORE_PATH, env=restore_env)
+                subprocess.run("cp {}/myfs_superblock /root/".format(db_dat_path).split())
             
             subprocess.run("rm -rf {db_path}".format(db_path=db_path).split())
             cp_db_cmd = "cp -R {db_org_path} {db_path}".format(db_org_path=db_org_path,db_path=db_path)
@@ -146,8 +153,11 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
             subprocess.run("rm -rf {db_org_path}".format(db_org_path=db_org_path).split())
             subprocess.run("cp -R {db_path} {db_org_path}".format(db_path=db_path, db_org_path=db_org_path).split())
             if mode == "abt":
-                subprocess.run("cp /root/myfs_superblock {db_path_org}".format(db_path_org=db_path_org).split())
-                subprocess.run(ABT_BACKUP)
+                subprocess.run("cp /root/myfs_superblock {db_org_path}".format(db_org_path=db_org_path).split())
+                subprocess.run("echo Exec abt_backup!".split())
+                #backup_env = os.environ.copy()
+                #backup_env["DRIVE_IDS"] = "_".join(drive_ids)
+                #subprocess.run(ABT_BACKUP, env=bakup_env)
     
 def run_clean():
     subprocess.run("dd if=/dev/zero of=/root/myfs_superblock count=1 bs=4G".split())
@@ -168,8 +178,8 @@ workloads = [
 
 #cache_size = 10*1024*1024*1024
 cache_size = 1*1024*1024
-#mode = "abt"
-mode = "native"
+mode = "abt"
+#mode = "native"
 
 #dbengine = "wiredtiger"
 dbengine = "rocksdb"
@@ -180,18 +190,18 @@ dbengine = "rocksdb"
 #run(mode, "set", dbengine, 1, 1, cache_size, "workloadau")
 #subprocess.run("/home/tomoya-s/work/run_rocksdb/staut/trial/a.out")
 
-#run(mode, "get", dbengine, 8, 128, cache_size, "workloadc")
+run(mode, "get", dbengine, 8, 128, cache_size, "workloadc")
 #run(mode, "get", dbengine, 8, 128, cache_size, "workloadau")
 #run(mode, "get", dbengine, 8, 128, cache_size, "workloadau")
-if True:
+if False:
     for cache_size in [1*1024*1024, 10*1024*1024*1024]:
-        for nctx in [128]:
+        for nctx in [128,256,64]:
             for workload in workloads:
-                for i in [0,1]:
+                for i in [0,1,2]:
                     if not USE_BACKUP:
                         run_clean()
                         run(mode, "set", dbengine, 8, 1, cache_size, workload)
-                    run(mode, "get", dbengine, 8, 128, cache_size, workload)
+                    run(mode, "get", dbengine, 8, n_ctx, cache_size, workload)
 
 #for nctx in [64,128,256]:
 #    for workload in workloads:
