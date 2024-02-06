@@ -55,7 +55,7 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
     else:
         disable_auto_compactions = 0
         
-    time_sec = 180
+    time_sec = 300
     time_warmup_sec = 30
     make_flags = []
     if dbengine == "rocksdb":
@@ -168,13 +168,20 @@ workloads = [
      "workloadb",
      "workloadc",
      "workloadd",
+     "workloade",
      "workloadf",
      "workloadau",
      "workloadbu",
      "workloadcu",
      "workloaddu",
+     "workloadeu",
      "workloadfu",
      ]
+
+# workloads = [
+#     "workloade",
+#     "workloadeu",
+# ]
 
 #cache_size = 10*1024*1024*1024
 cache_size = 1*1024*1024
@@ -190,19 +197,22 @@ dbengine = "rocksdb"
 #run(mode, "set", dbengine, 1, 1, cache_size, "workloadau")
 #subprocess.run("/home/tomoya-s/work/run_rocksdb/staut/trial/a.out")
 
-run(mode, "get", dbengine, 8, 128, cache_size, "workloadc")
+#run(mode, "get", dbengine, 8, 128, cache_size, "workloadc")
 #run(mode, "get", dbengine, 8, 128, cache_size, "workloadau")
 #run(mode, "get", dbengine, 8, 128, cache_size, "workloadau")
-if False:
-    for cache_size in [1*1024*1024, 10*1024*1024*1024]:
-        for nctx in [128,256,64]:
+
+#run_clean()
+#run("abt", "set", dbengine, 1, 1, 1*1024*1024, "workloadau")
+#run("abt", "get", dbengine, 8, 256, 1*1024*1024, "workloadau")
+
+if True:
+    for n_ctx in [128, 256, 64, 32]:
+        for cache_size in [1*1024*1024, 10*1024*1024*1024]:
             for workload in workloads:
-                for i in [0,1,2]:
-                    if not USE_BACKUP:
-                        run_clean()
-                        run(mode, "set", dbengine, 8, 1, cache_size, workload)
+                for i in [0]:
                     run(mode, "get", dbengine, 8, n_ctx, cache_size, workload)
 
+                    
 #for nctx in [64,128,256]:
 #    for workload in workloads:
 #        run(mode, "get", 8, nctx, 1*1024*1024, workload)
