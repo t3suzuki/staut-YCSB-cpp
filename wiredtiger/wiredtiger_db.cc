@@ -218,6 +218,8 @@ DB::Status WTDB::ReadSingleEntry(const std::string &table, const std::string &ke
   cursor_->set_key(cursor_, &k);
   ret = cursor_->search(cursor_);
   if(ret==WT_NOTFOUND){
+    printf("Not found!\n");
+    exit(1);
     return kNotFound;
   } else if(ret != 0) {
     throw utils::Exception(WT_PREFIX " search error");
