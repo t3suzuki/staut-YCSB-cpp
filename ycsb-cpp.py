@@ -8,8 +8,8 @@ WIREDTIGER_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/wiredtiger"
 
 ABT_RESTORE_PATH = "/home/tomoya-s/work/run_rocksdb/staut/abt_backup/abt_restore"
 
-RECORDCOUNT = 10*1000*1000
-#RECORDCOUNT = 300*1000
+RECORDCOUNT = 5*1000*1000
+#RECORDCOUNT = 33000*1000
 #RECORDCOUNT = 100*1000*1000
 
 USE_BACKUP = True
@@ -27,7 +27,7 @@ def get_cmd(mode, op, dbengine, n_th, cache_capacity, workload, dbname):
     if mode == "native":
         common_args += " -p status=true"
     else:
-        common_args += " -p status=false"
+        common_args += " -p status=true"
     
     if op == "set":
         cmd = "./ycsb -load {}".format(common_args)
@@ -155,9 +155,11 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
     if op == "set":
         if USE_BACKUP:
             exec_cmd_str("rm -rf {db_org_path}".format(db_org_path=db_org_path))
+            exec_cmd_str("rm -rf {db_dat_path}".format(db_dat_path=db_dat_path))
+            exec_cmd_str("mkdir {db_dat_path}".format(db_dat_path=db_dat_path))
             exec_cmd_str("cp -R {db_path} {db_org_path}".format(db_path=db_path, db_org_path=db_org_path))
             if mode == "abt":
-                exec_cmd_str("cp /root/myfs_superblock {db_org_path}".format(db_org_path=db_org_path))
+                exec_cmd_str("cp /root/myfs_superblock {db_dat_path}".format(db_dat_path=db_dat_path))
                 exec_cmd_str("echo Exec abt_backup!")
                 #backup_env = os.environ.copy()
                 #backup_env["DRIVE_IDS"] = "_".join(drive_ids)
@@ -189,8 +191,8 @@ workloads = [
 
 cache_size = 10*1024*1024*1024
 #cache_size = 1*1024*1024
-#mode = "abt"
-mode = "native"
+mode = "abt"
+#mode = "native"
 
 dbengine = "wiredtiger"
 #dbengine = "rocksdb"
@@ -206,10 +208,11 @@ dbengine = "wiredtiger"
 
 
 #run_clean()
-#run("abt", "set", dbengine, 1, 1, 1*1024*1024, "workloadau")
-#run("abt", "get", dbengine, 8, 256, 1*1024*1024, "workloadau")
+#run("abt", "set", "wiredtiger", 1, 1, cache_size, "workloadau")
+#run("abt", "get", "wiredtiger", 8, 128, cache_size, "workloadau")
+run("abt", "get", dbengine, 8, 256, 1*1024*1024, "workloadau")
 
-if True:
+if False:
     for n_ctx in [128]:
         for cache_size in [10*1024*1024*1024]: #[1*1024*1024, 10*1024*1024*1024]:
             for workload in workloads:
