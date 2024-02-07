@@ -9,9 +9,8 @@ WIREDTIGER_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/wiredtiger"
 ABT_RESTORE_PATH = "/home/tomoya-s/work/run_rocksdb/staut/abt_backup/abt_restore"
 ABT_BACKUP_PATH = "/home/tomoya-s/work/run_rocksdb/staut/abt_backup/abt_backup"
 
-#RECORDCOUNT = 5*1000*1000
-RECORDCOUNT = 210*1000
-#RECORDCOUNT = 100*1000*1000
+#RECORDCOUNT = 50*1000*1000
+RECORDCOUNT = 100*1000*1000
 
 USE_BACKUP = True
 
@@ -28,7 +27,7 @@ def get_cmd(mode, op, dbengine, n_th, cache_capacity, workload, dbname):
     if mode == "native":
         common_args += " -p status=true"
     else:
-        common_args += " -p status=false"
+        common_args += " -p status=true"
     
     if op == "set":
         cmd = "./ycsb -load {}".format(common_args)
@@ -96,16 +95,18 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
             exec_cmd_str("rm -rf {db_path}".format(db_path=db_path))
             cp_db_cmd = "cp -R {db_org_path} {db_path}".format(db_org_path=db_org_path,db_path=db_path)
             exec_cmd_str(cp_db_cmd)
-            sec1 = 5
-            for x in range(0, sec1):
-                subprocess.run("echo {}/{}".format(x,sec1).split())
-                time.sleep(1)
-            exec_cmd_str("vmtouch -e {db_path}".format(db_path=db_path))
-            exec_cmd_str("numactl --preferred=0 /home/tomoya-s/work/run_rocksdb/staut/trial/a.out")
-            sec1 = 10
-            for x in range(0, sec1):
-                subprocess.run("echo {}/{}".format(x,sec1).split())
-                time.sleep(1)
+
+            if True:
+                sec1 = 5
+                for x in range(0, sec1):
+                    subprocess.run("echo {}/{}".format(x,sec1).split())
+                    time.sleep(1)
+                exec_cmd_str("vmtouch -e {db_path}".format(db_path=db_path))
+                exec_cmd_str("numactl --preferred=0 /home/tomoya-s/work/run_rocksdb/staut/trial/a.out")
+                sec1 = 10
+                for x in range(0, sec1):
+                    subprocess.run("echo {}/{}".format(x,sec1).split())
+                    time.sleep(1)
     if op == "set":
         exec_cmd_str("rm -rf {db_path}".format(db_path=db_path))
         exec_cmd_str("mkdir -p {db_path}".format(db_path=db_path))
@@ -128,6 +129,17 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
         #my_env["ABT_INITIAL_NUM_SUB_XSTREAMS"] = str(n_th + 16)
         my_env["MYFS_SUPERBLOCK_PATH"] = "/root/myfs_superblock"
         #my_env["LIBDEBUG"] = MYLIB_PATH + "/debug.so"
+    elif mode == "io_uring":
+        mylib_build_cmd = "make -C {} ABT_PATH={} N_CORE={} USE_PREEMPT=0 USE_IO_URING=1".format(MYLIB_PATH, ABT_PATH, n_core)
+        process = subprocess.run(mylib_build_cmd.split())
+        my_env["LD_PRELOAD"] = MYLIB_PATH + "/mylib.so"
+        if dbengine == "rocksdb":
+            my_env["HOOKED_ROCKSDB_DIR"] = db_path
+            my_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:/home/tomoya-s/mountpoint2/tomoya-s/rocksdb/build"
+        elif dbengine == "wiredtiger":
+            my_env["HOOKED_FILENAMES"] = db_path + "/ycsbc.wt" + ":" + db_path + "/WiredTigerHS.wt"
+        #my_env["LIBDEBUG"] = MYLIB_PATH + "/debug.so"
+        
     if USE_BACKUP:
         cmd = get_cmd(mode, op, dbengine, n_th, cache_capacity, "cp_workload", db_path)
     else:
@@ -157,10 +169,10 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
     if op == "set":
         if USE_BACKUP:
             exec_cmd_str("rm -rf {db_org_path}".format(db_org_path=db_org_path))
-            exec_cmd_str("rm -rf {db_dat_path}".format(db_dat_path=db_dat_path))
-            exec_cmd_str("mkdir {db_dat_path}".format(db_dat_path=db_dat_path))
             exec_cmd_str("cp -R {db_path} {db_org_path}".format(db_path=db_path, db_org_path=db_org_path))
             if mode == "abt":
+                exec_cmd_str("rm -rf {db_dat_path}".format(db_dat_path=db_dat_path))
+                exec_cmd_str("mkdir {db_dat_path}".format(db_dat_path=db_dat_path))
                 exec_cmd_str("cp /root/myfs_superblock {db_dat_path}".format(db_dat_path=db_dat_path))
                 backup_env = os.environ.copy()
                 backup_env["DRIVE_IDS"] = "_".join(drive_ids)
@@ -186,18 +198,13 @@ workloads = [
      "workloadfu",
      ]
 
-# workloads = [
-#     "workloade",
-#     "workloadeu",
-# ]
+#cache_size = 10*1024*1024*1024
+cache_size = 1*1024*1024
+#mode = "abt"
+mode = "native"
 
-cache_size = 10*1024*1024*1024
-#cache_size = 1*1024*1024
-mode = "abt"
-#mode = "native"
-
-dbengine = "wiredtiger"
-#dbengine = "rocksdb"
+#dbengine = "wiredtiger"
+dbengine = "rocksdb"
 
 
 #run_clean()
@@ -205,21 +212,28 @@ dbengine = "wiredtiger"
 #run("native", "get", "wiredtiger", 1, 1, cache_size, "workloadau")
 
 #run(mode, "get", dbengine, 8, 128, cache_size, "workloadc")
-#run("native", "get", dbengine, 8, 128, cache_size, "workloada")
+#run("native", "set", dbengine, 1, 1, cache_size, "workloadcu")
+#run("native", "get", dbengine, 8, 128, cache_size, "workloadcu")
+#run("io_uring", "get", dbengine, 8, 128, cache_size, "workloadcu")
 #run("abt", "get", dbengine, 8, 128, cache_size, "workloada")
 
 
 #run_clean()
-#run("abt", "set", dbengine, 1, 1, cache_size, "workloadau")
-run("abt", "get", dbengine, 8, 128, cache_size, "workloadbu")
+#run("abt", "set", dbengine, 1, 1, cache_size, "workloadcu")
+#run("abt", "get", dbengine, 8, 128, 10*1024*1024*1024, "workloadcu")
 #run("abt", "get", dbengine, 8, 256, 1*1024*1024, "workloadau")
 
-if False:
-    for n_ctx in [128, 256, 64, 32]:
+if True:
+    #for n_ctx in [128, 256, 64, 32]:
+    for n_ctx in [128]:
+        #for cache_size in [10*1024*1024*1024]:
         for cache_size in [1*1024*1024, 10*1024*1024*1024]:
             for workload in workloads:
                 for i in [0]:
                     run(mode, "get", dbengine, 8, n_ctx, cache_size, workload)
+
+#run_clean()
+#run("abt", "set", "wiredtiger", 1, 1, 10*1024*1024*1024, "workloadcu")
 
                     
 #for nctx in [64,128,256]:
