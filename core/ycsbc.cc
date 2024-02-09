@@ -90,6 +90,7 @@ int main(const int argc, const char *argv[]) {
   ParseCommandLine(argc, argv, props);
 
   const bool do_load = (props.GetProperty("doload", "false") == "true");
+  const bool do_warmup = true;
   const bool do_transaction = (props.GetProperty("dotransaction", "false") == "true");
   if (!do_load && !do_transaction) {
     std::cerr << "No operation to do" << std::endl;
@@ -166,7 +167,7 @@ int main(const int argc, const char *argv[]) {
   std::this_thread::sleep_for(std::chrono::seconds(stoi(props.GetProperty("sleepafterload", "0"))));
 
   // warmup phase
-  if (do_transaction) {
+  if (do_warmup) {
     ycsbc::utils::CountDownLatch latch(num_threads);
     ycsbc::utils::Timer<double> timer;
     std::vector<std::future<int>> client_threads;
@@ -235,7 +236,7 @@ int main(const int argc, const char *argv[]) {
     for (int i = 0; i < num_threads; ++i) {
       ycsbc::utils::RateLimiter *rlim = nullptr;
       client_threads.emplace_back(std::async(std::launch::async, ycsbc::ClientThread, dbs[i], &wl,
-                                             std::numeric_limits<int>::max(), false, !do_load, true, &latch, rlim, &quit));
+                                             std::numeric_limits<int>::max(), false, !do_load && !do_warmup, true, &latch, rlim, &quit));
     }
 
     assert((int)client_threads.size() == num_threads);
