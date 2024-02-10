@@ -180,7 +180,7 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
                 subprocess.run("{} {}".format(ABT_BACKUP_PATH, db_dat_path).split(), env=backup_env)
     
 def run_clean():
-    exec_cmd_str("dd if=/dev/zero of=/root/myfs_superblock count=1 bs=2200M")
+    exec_cmd_str("dd if=/dev/zero of=/root/myfs_superblock count=5 bs=500M")
     
 
 workloads = [
@@ -200,8 +200,9 @@ workloads = [
 
 #cache_size = 10*1024*1024*1024
 cache_size = 1*1024*1024
-#mode = "abt"
-mode = "native"
+mode = "abt"
+#mode = "native"
+#mode = "io_uring"
 
 #dbengine = "wiredtiger"
 dbengine = "rocksdb"
@@ -218,8 +219,8 @@ dbengine = "rocksdb"
 #run("abt", "get", dbengine, 8, 128, cache_size, "workloada")
 
 
-#run_clean()
-#run("abt", "set", dbengine, 1, 1, cache_size, "workloadcu")
+run_clean()
+run("abt", "set", dbengine, 1, 1, cache_size, "workloadcu")
 #run("abt", "get", dbengine, 8, 128, 10*1024*1024*1024, "workloadcu")
 #run("abt", "get", dbengine, 8, 256, 1*1024*1024, "workloadau")
 
