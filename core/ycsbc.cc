@@ -90,8 +90,8 @@ int main(const int argc, const char *argv[]) {
   ParseCommandLine(argc, argv, props);
 
   const bool do_load = (props.GetProperty("doload", "false") == "true");
-  const bool do_warmup = true;
   const bool do_transaction = (props.GetProperty("dotransaction", "false") == "true");
+  const bool do_warmup = do_transaction;
   if (!do_load && !do_transaction) {
     std::cerr << "No operation to do" << std::endl;
     exit(1);
