@@ -1,16 +1,20 @@
 import subprocess, os
 import time
 
-ABT_PATH = "/home/tomoya-s/work/github/ppopp21-preemption-artifact/argobots/install"
-MYLIB_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/pthabt/newlib"
-ROCKSDB_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/rocksdb"
-WIREDTIGER_PATH = "/home/tomoya-s/mountpoint2/tomoya-s/wiredtiger"
+ABT_PATH = "{}/../ppopp21-preemption-artifact/argobots/install".format(os.getcwd())
+MYLIB_PATH = "{}/../mylib".format(os.getcwd())
+ROCKSDB_PATH = "{}/../rocksdb".format(os.getcwd())
+WIREDTIGER_PATH = "{}/../wiredtiger".format(os.getcwd())
 
-ABT_RESTORE_PATH = "/home/tomoya-s/work/run_rocksdb/staut/abt_backup/abt_restore"
-ABT_BACKUP_PATH = "/home/tomoya-s/work/run_rocksdb/staut/abt_backup/abt_backup"
+ABT_RESTORE_PATH = "{}/../abt_backup/abt_restore".format(os.getcwd())
+ABT_BACKUP_PATH = "{}/../abt_backup/abt_backup".format(os.getcwd())
+
+DB_DIR = "/home/tomoya-s/mountpoint2/tomoya-s"
+RUN_DIR = "/home/tomoya-s/mountpoint/tomoya-s"
 
 #RECORDCOUNT = 50*1000*1000
 RECORDCOUNT = 100*1000*1000
+#RECORDCOUNT = 7*1000*1000
 
 USE_BACKUP = True
 
@@ -42,13 +46,13 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
     
     if mode == "abt":
         if USE_BACKUP:
-            db_org_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-{}-abt-{}.back".format(dbengine, RECORDCOUNT)
-            db_dat_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-{}-abt-{}.dat".format(dbengine, RECORDCOUNT)
-        db_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-{}-abt-{}".format(dbengine, RECORDCOUNT)
+            db_org_path = "{}/ycsb-{}-abt-{}.back".format(DB_DIR, dbengine, RECORDCOUNT)
+            db_dat_path = "{}/ycsb-{}-abt-{}.dat".format(DB_DIR, dbengine, RECORDCOUNT)
+        db_path = "{}/ycsb-{}-abt-{}".format(DB_DIR, dbengine, RECORDCOUNT)
     else:
         if USE_BACKUP:
-            db_org_path = "/home/tomoya-s/mountpoint2/tomoya-s/ycsb-{}-native-{}.back".format(dbengine, RECORDCOUNT)
-        db_path = "/home/tomoya-s/mountpoint/tomoya-s/ycsb-{}-native-{}".format(dbengine, RECORDCOUNT)
+            db_org_path = "{}/ycsb-{}-native-{}.back".format(DB_DIR, dbengine, RECORDCOUNT)
+        db_path = "{}/ycsb-{}-native-{}".format(RUN_DIR, dbengine, RECORDCOUNT)
         
     if mode == "native":
         add_sched_yield = 0
@@ -120,7 +124,7 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
         my_env["ABT_PREEMPTION_INTERVAL_USEC"] = "10000000"
         if dbengine == "rocksdb":
             my_env["HOOKED_ROCKSDB_DIR"] = db_path
-            my_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:/home/tomoya-s/mountpoint2/tomoya-s/rocksdb/build"
+            my_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:{}/build".format(ROCKSDB_PATH)
         elif dbengine == "wiredtiger":
             my_env["HOOKED_FILENAMES"] = db_path + "/ycsbc.wt" + ":" + db_path + "/WiredTigerHS.wt"
             #my_env["HOOKED_FILENAMES"] = db_path + "/ycsbc.wt"
@@ -135,10 +139,13 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
         my_env["LD_PRELOAD"] = MYLIB_PATH + "/mylib.so"
         if dbengine == "rocksdb":
             my_env["HOOKED_ROCKSDB_DIR"] = db_path
-            my_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:/home/tomoya-s/mountpoint2/tomoya-s/rocksdb/build"
+            my_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:{}/build".format(ROCKSDB_PATH)
         elif dbengine == "wiredtiger":
             my_env["HOOKED_FILENAMES"] = db_path + "/ycsbc.wt" + ":" + db_path + "/WiredTigerHS.wt"
         #my_env["LIBDEBUG"] = MYLIB_PATH + "/debug.so"
+    else:
+        if dbengine == "rocksdb":
+            my_env["LD_LIBRARY_PATH"] = "{}/build".format(ROCKSDB_PATH)
         
     if USE_BACKUP:
         cmd = get_cmd(mode, op, dbengine, n_th, cache_capacity, "cp_workload", db_path)
@@ -158,13 +165,15 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
         
             comp_env = os.environ.copy()
             comp_env["LD_PRELOAD"] = MYLIB_PATH + "/mylib.so"
-            comp_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:/home/tomoya-s/mountpoint2/tomoya-s/rocksdb/build"
+            comp_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:{}/build".format(ROCKSDB_PATH)
             comp_env["HOOKED_ROCKSDB_DIR"] = db_path
             comp_env["DRIVE_IDS"] = "_".join(drive_ids)
             comp_env["MYFS_SUPERBLOCK_PATH"] = "/root/myfs_superblock"
             res = subprocess.run("./compact", env=comp_env)
         else:
-            res = exec_cmd_str("./compact")
+            comp_env = os.environ.copy()
+            comp_env["LD_LIBRARY_PATH"] = "{}/build".format(ROCKSDB_PATH)
+            res = subprocess.run("./compact", env=comp_env)
 
     if op == "set":
         if USE_BACKUP:
@@ -219,12 +228,14 @@ dbengine = "rocksdb"
 #run("abt", "get", dbengine, 8, 128, cache_size, "workloada")
 
 
-run_clean()
-run("abt", "set", dbengine, 1, 1, cache_size, "workloadcu")
+#run_clean()
+#run("native", "set", dbengine, 1, 1, cache_size, "workloadcu")
+#run("native", "get", dbengine, 1, 1, cache_size, "workloadcu")
+run("native", "get", dbengine, 8, 128, cache_size, "workloadcu")
 #run("abt", "get", dbengine, 8, 128, 10*1024*1024*1024, "workloadcu")
 #run("abt", "get", dbengine, 8, 256, 1*1024*1024, "workloadau")
 
-if True:
+if False:
     #for n_ctx in [128, 256, 64, 32]:
     for n_ctx in [128]:
         #for cache_size in [10*1024*1024*1024]:
