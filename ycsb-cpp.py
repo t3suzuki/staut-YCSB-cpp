@@ -12,8 +12,8 @@ ABT_BACKUP_PATH = "{}/../abt_backup/abt_backup".format(os.getcwd())
 DB_DIR = "/home/tomoya-s/mountpoint2/tomoya-s"
 RUN_DIR = "/home/tomoya-s/mountpoint/tomoya-s"
 
-#RECORDCOUNT = 50*1000*1000
-RECORDCOUNT = 100*1000*1000
+RECORDCOUNT = 50*1000*1000
+#RECORDCOUNT = 100*1000*1000
 #RECORDCOUNT = 7*1000*1000
 
 USE_BACKUP = True
@@ -128,7 +128,7 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
         elif dbengine == "wiredtiger":
             my_env["HOOKED_FILENAMES"] = db_path + "/ycsbc.wt" + ":" + db_path + "/WiredTigerHS.wt"
             #my_env["HOOKED_FILENAMES"] = db_path + "/ycsbc.wt"
-            my_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:/home/tomoya-s/mountpoint2/tomoya-s/wiredtiger/build"
+            my_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:{}/build".format(WIREDTIGER_PATH)
         my_env["DRIVE_IDS"] = "_".join(drive_ids)
         #my_env["ABT_INITIAL_NUM_SUB_XSTREAMS"] = str(n_th + 16)
         my_env["MYFS_SUPERBLOCK_PATH"] = "/root/myfs_superblock"
@@ -146,6 +146,9 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
     else:
         if dbengine == "rocksdb":
             my_env["LD_LIBRARY_PATH"] = "{}/build".format(ROCKSDB_PATH)
+        else:
+            my_env["LD_LIBRARY_PATH"] = "{}/build".format(WIREDTIGER_PATH)
+            
         
     if USE_BACKUP:
         cmd = get_cmd(mode, op, dbengine, n_th, cache_capacity, "cp_workload", db_path)
@@ -207,14 +210,14 @@ workloads = [
      "workloadfu",
      ]
 
-#cache_size = 10*1024*1024*1024
-cache_size = 1*1024*1024
+cache_size = 10*1024*1024*1024
+#cache_size = 1*1024*1024
 mode = "abt"
 #mode = "native"
 #mode = "io_uring"
 
-#dbengine = "wiredtiger"
-dbengine = "rocksdb"
+dbengine = "wiredtiger"
+#dbengine = "rocksdb"
 
 
 #run_clean()
