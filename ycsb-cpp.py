@@ -11,6 +11,8 @@ ABT_BACKUP_PATH = "/home/tomoya-s/work/run_rocksdb/staut/abt_backup/abt_backup"
 
 #RECORDCOUNT = 50*1000*1000
 RECORDCOUNT = 100*1000*1000
+#RECORDCOUNT = 4*1000*1000
+#RECORDCOUNT = 300*1000
 
 USE_BACKUP = True
 
@@ -96,7 +98,7 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
             cp_db_cmd = "cp -R {db_org_path} {db_path}".format(db_org_path=db_org_path,db_path=db_path)
             exec_cmd_str(cp_db_cmd)
 
-            if True:
+            if False:
                 sec1 = 5
                 for x in range(0, sec1):
                     subprocess.run("echo {}/{}".format(x,sec1).split())
@@ -120,11 +122,11 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
         my_env["ABT_PREEMPTION_INTERVAL_USEC"] = "10000000"
         if dbengine == "rocksdb":
             my_env["HOOKED_ROCKSDB_DIR"] = db_path
-            my_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:/home/tomoya-s/mountpoint2/tomoya-s/rocksdb/build"
+            my_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:" + "/home/tomoya-s/mountpoint2/tomoya-s/rocksdb/build"
         elif dbengine == "wiredtiger":
             my_env["HOOKED_FILENAMES"] = db_path + "/ycsbc.wt" + ":" + db_path + "/WiredTigerHS.wt"
             #my_env["HOOKED_FILENAMES"] = db_path + "/ycsbc.wt"
-            my_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:/home/tomoya-s/mountpoint2/tomoya-s/wiredtiger/build"
+            my_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:" + "/home/tomoya-s/mountpoint2/tomoya-s/wiredtiger/build"
         my_env["DRIVE_IDS"] = "_".join(drive_ids)
         #my_env["ABT_INITIAL_NUM_SUB_XSTREAMS"] = str(n_th + 16)
         my_env["MYFS_SUPERBLOCK_PATH"] = "/root/myfs_superblock"
@@ -135,16 +137,23 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
         my_env["LD_PRELOAD"] = MYLIB_PATH + "/mylib.so"
         if dbengine == "rocksdb":
             my_env["HOOKED_ROCKSDB_DIR"] = db_path
-            my_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:/home/tomoya-s/mountpoint2/tomoya-s/rocksdb/build"
+            my_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:" + "/home/tomoya-s/mountpoint2/tomoya-s/rocksdb/build"
         elif dbengine == "wiredtiger":
             my_env["HOOKED_FILENAMES"] = db_path + "/ycsbc.wt" + ":" + db_path + "/WiredTigerHS.wt"
+            my_env["LD_LIBRARY_PATH"] = ABT_PATH + "/lib:" + "/home/tomoya-s/mountpoint2/tomoya-s/wiredtiger/build"
         #my_env["LIBDEBUG"] = MYLIB_PATH + "/debug.so"
+    else:
+        if dbengine == "rocksdb":
+            my_env["LD_LIBRARY_PATH"] = "/home/tomoya-s/mountpoint2/tomoya-s/rocksdb/build"
+        elif dbengine == "wiredtiger":
+            my_env["LD_LIBRARY_PATH"] = "/home/tomoya-s/mountpoint2/tomoya-s/wiredtiger/build"
         
     if USE_BACKUP:
         cmd = get_cmd(mode, op, dbengine, n_th, cache_capacity, "cp_workload", db_path)
     else:
         cmd = get_cmd(mode, op, dbengine, n_th, cache_capacity, workload, db_path)
-        
+
+    print(my_env)
     print(cmd)
     res = subprocess.run(cmd.split(), env=my_env, capture_output=False)
     #print("captured stdout: {}".format(res.stdout.decode()))
@@ -198,10 +207,11 @@ workloads = [
      "workloadfu",
      ]
 
-#cache_size = 10*1024*1024*1024
-cache_size = 1*1024*1024
-mode = "abt"
-#mode = "native"
+cache_size = 10*1024*1024*1024
+#cache_size = 0
+#cache_size = 512*1024*1024
+#mode = "abt"
+mode = "native"
 #mode = "io_uring"
 
 #dbengine = "wiredtiger"
@@ -215,20 +225,26 @@ dbengine = "rocksdb"
 #run(mode, "get", dbengine, 8, 128, cache_size, "workloadc")
 #run("native", "set", dbengine, 1, 1, cache_size, "workloadcu")
 #run("native", "get", dbengine, 8, 128, cache_size, "workloadcu")
-#run("io_uring", "get", dbengine, 8, 128, cache_size, "workloadcu")
+#run("abt", "get", dbengine, 8, 128, cache_size, "workloadcu")
+#run("io_uring", "get", dbengine, 8, 128, cache_size, "workloada")
+#run("native", "get", dbengine, 8, 128, cache_size, "workloadc")
+#run("io_uring", "get", dbengine, 8, 128, cache_size, "workloada")
+#run("native", "get", dbengine, 8, 128, cache_size, "workloada")
+#run("native", "get", dbengine, 8, 512, cache_size, "workloadc")
+#run("native", "get", dbengine, 8, 128, cache_size, "workloadc")
 #run("abt", "get", dbengine, 8, 128, cache_size, "workloada")
 
 
-run_clean()
-run("abt", "set", dbengine, 1, 1, cache_size, "workloadcu")
+#run_clean()
+#run("abt", "set", dbengine, 1, 1, cache_size, "workloadcu")
 #run("abt", "get", dbengine, 8, 128, 10*1024*1024*1024, "workloadcu")
 #run("abt", "get", dbengine, 8, 256, 1*1024*1024, "workloadau")
 
 if True:
-    #for n_ctx in [128, 256, 64, 32]:
-    for n_ctx in [128]:
+    for n_ctx in [128, 256, 64]:
+    #for n_ctx in [128]:
         #for cache_size in [10*1024*1024*1024]:
-        for cache_size in [1*1024*1024, 10*1024*1024*1024]:
+        for cache_size in [1*1024*1024, 10*1024*1024, 100*1024*1024, 1024*1024*1024, 10*1024*1024*1024]:
             for workload in workloads:
                 for i in [0]:
                     run(mode, "get", dbengine, 8, n_ctx, cache_size, workload)
