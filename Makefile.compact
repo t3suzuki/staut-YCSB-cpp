@@ -1,6 +1,4 @@
 
-ROCKSDB_PATH = /home/tomoya-s/mountpoint2/tomoya-s/rocksdb
-
 N_TH ?= 1
 DB_PATH ?=
 

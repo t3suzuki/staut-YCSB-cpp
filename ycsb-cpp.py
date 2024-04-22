@@ -9,14 +9,15 @@ WIREDTIGER_PATH = "{}/../wiredtiger".format(os.getcwd())
 ABT_RESTORE_PATH = "{}/../abt_backup/abt_restore".format(os.getcwd())
 ABT_BACKUP_PATH = "{}/../abt_backup/abt_backup".format(os.getcwd())
 
-DB_DIR = "/home/tomoya-s/mountpoint2/tomoya-s"
-RUN_DIR = "/home/tomoya-s/mountpoint/tomoya-s"
+DB_DIR = "/home/tomoya/mountpoint2/tomoya-s"
+RUN_DIR = "/home/tomoya/mountpoint/tomoya-s"
 
-RECORDCOUNT = 50*1000*1000
+#RECORDCOUNT = 50*1000*1000
+RECORDCOUNT = 50*1000
 #RECORDCOUNT = 100*1000*1000
 #RECORDCOUNT = 7*1000*1000
 
-USE_BACKUP = True
+USE_BACKUP = False
 
 def exec_cmd_str(cmd_str):
     print("Exec: " + cmd_str)
@@ -79,8 +80,8 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
     print(make_flags)
     subprocess.run("make -j -B".split() + make_flags)
         
-    exec_cmd_str("sudo chcpu -e 1-{}".format(n_core-1))
-    exec_cmd_str("sudo chcpu -d {}-39".format(n_core))
+    #exec_cmd_str("sudo chcpu -e 1-{}".format(n_core-1))
+    #exec_cmd_str("sudo chcpu -d {}-39".format(n_core))
 
 
     if USE_BACKUP:
@@ -150,18 +151,19 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
             my_env["LD_LIBRARY_PATH"] = "{}/build".format(WIREDTIGER_PATH)
             
         
-    if USE_BACKUP:
+    if USE_BACKUP and op == "get":
         cmd = get_cmd(mode, op, dbengine, n_th, cache_capacity, "cp_workload", db_path)
     else:
         cmd = get_cmd(mode, op, dbengine, n_th, cache_capacity, workload, db_path)
         
     print(cmd)
+    #print(my_env)
     res = subprocess.run(cmd.split(), env=my_env, capture_output=False)
     #print("captured stdout: {}".format(res.stdout.decode()))
     #print("captured stderr: {}".format(res.stderr.decode()))
 
     if op == "set" and dbengine == "rocksdb":
-        exec_cmd_str("make -f Makefile.compact compact -B N_TH={} DB_PATH={}".format(n_th, db_path))
+        exec_cmd_str("make -f Makefile.compact compact -B N_TH={} DB_PATH={} ROCKSDB_PATH={}".format(n_th, db_path, ROCKSDB_PATH))
         if mode == "abt":
             mylib_build_cmd = "make -C {} ABT_PATH={} N_CORE={} ND={} USE_PREEMPT=0".format(MYLIB_PATH, ABT_PATH, 1, len(drive_ids))
             process = exec_cmd_str(mylib_build_cmd)
@@ -212,12 +214,12 @@ workloads = [
 
 cache_size = 10*1024*1024*1024
 #cache_size = 1*1024*1024
-mode = "abt"
-#mode = "native"
+#mode = "abt"
+mode = "native"
 #mode = "io_uring"
 
-dbengine = "wiredtiger"
-#dbengine = "rocksdb"
+#dbengine = "wiredtiger"
+dbengine = "rocksdb"
 
 
 #run_clean()
@@ -232,9 +234,9 @@ dbengine = "wiredtiger"
 
 
 #run_clean()
-#run("native", "set", dbengine, 1, 1, cache_size, "workloadcu")
-#run("native", "get", dbengine, 1, 1, cache_size, "workloadcu")
-run("native", "get", dbengine, 8, 128, cache_size, "workloadcu")
+run("native", "set", dbengine, 1, 1, cache_size, "workloadcu")
+run("native", "get", dbengine, 1, 1, cache_size, "workloadcu")
+#run("native", "get", dbengine, 8, 128, cache_size, "workloadcu")
 #run("abt", "get", dbengine, 8, 128, 10*1024*1024*1024, "workloadcu")
 #run("abt", "get", dbengine, 8, 256, 1*1024*1024, "workloadau")
 
