@@ -12,12 +12,12 @@ ABT_BACKUP_PATH = "{}/../abt_backup/abt_backup".format(os.getcwd())
 DB_DIR = "/home/tomoya/mountpoint2/tomoya-s"
 RUN_DIR = "/home/tomoya/mountpoint/tomoya-s"
 
-#RECORDCOUNT = 50*1000*1000
-RECORDCOUNT = 50*1000
+RECORDCOUNT = 50*1000*1000
+#RECORDCOUNT = 400*1000
 #RECORDCOUNT = 100*1000*1000
 #RECORDCOUNT = 7*1000*1000
 
-USE_BACKUP = False
+USE_BACKUP = True
 
 def exec_cmd_str(cmd_str):
     print("Exec: " + cmd_str)
@@ -66,7 +66,7 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
         disable_auto_compactions = 0
         
     time_sec = 180
-    time_warmup_sec = 30
+    time_warmup_sec = 60
     make_flags = []
     if dbengine == "rocksdb":
         make_flags.append("BIND_ROCKSDB=1")
@@ -80,8 +80,8 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
     print(make_flags)
     subprocess.run("make -j -B".split() + make_flags)
         
-    #exec_cmd_str("sudo chcpu -e 1-{}".format(n_core-1))
-    #exec_cmd_str("sudo chcpu -d {}-39".format(n_core))
+    exec_cmd_str("sudo chcpu -e 1-{}".format(n_core-1))
+    exec_cmd_str("sudo chcpu -d {}-13".format(n_core))
 
 
     if USE_BACKUP:
@@ -101,7 +101,7 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
             cp_db_cmd = "cp -R {db_org_path} {db_path}".format(db_org_path=db_org_path,db_path=db_path)
             exec_cmd_str(cp_db_cmd)
 
-            if True:
+            if False:
                 sec1 = 5
                 for x in range(0, sec1):
                     subprocess.run("echo {}/{}".format(x,sec1).split())
@@ -235,12 +235,12 @@ dbengine = "rocksdb"
 
 #run_clean()
 run("native", "set", dbengine, 1, 1, cache_size, "workloadcu")
-run("native", "get", dbengine, 1, 1, cache_size, "workloadcu")
+#run("native", "get", dbengine, 1, 1, cache_size, "workloadcu")
 #run("native", "get", dbengine, 8, 128, cache_size, "workloadcu")
 #run("abt", "get", dbengine, 8, 128, 10*1024*1024*1024, "workloadcu")
 #run("abt", "get", dbengine, 8, 256, 1*1024*1024, "workloadau")
 
-if False:
+if True:
     #for n_ctx in [128, 256, 64, 32]:
     for n_ctx in [128]:
         #for cache_size in [10*1024*1024*1024]:
