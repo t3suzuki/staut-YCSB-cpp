@@ -12,7 +12,7 @@ ABT_BACKUP_PATH = "{}/../abt_backup/abt_backup".format(os.getcwd())
 DB_DIR = "/home/tomoya-s/mountpoint2/tomoya-s"
 RUN_DIR = "/home/tomoya-s/mountpoint/tomoya-s"
 
-RECORDCOUNT = 50*1000*1000
+RECORDCOUNT = 50*1000*10
 #RECORDCOUNT = 100*1000*1000
 #RECORDCOUNT = 7*1000*1000
 
@@ -79,8 +79,8 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
     print(make_flags)
     subprocess.run("make -j -B".split() + make_flags)
         
-    exec_cmd_str("sudo chcpu -e 1-{}".format(n_core-1))
-    exec_cmd_str("sudo chcpu -d {}-39".format(n_core))
+    #exec_cmd_str("sudo chcpu -e 1-{}".format(n_core-1))
+    #exec_cmd_str("sudo chcpu -d {}-39".format(n_core))
 
 
     if USE_BACKUP:
@@ -100,7 +100,7 @@ def run(mode, op, dbengine, n_core, n_th, cache_capacity, workload):
             cp_db_cmd = "cp -R {db_org_path} {db_path}".format(db_org_path=db_org_path,db_path=db_path)
             exec_cmd_str(cp_db_cmd)
 
-            if True:
+            if False:
                 sec1 = 5
                 for x in range(0, sec1):
                     subprocess.run("echo {}/{}".format(x,sec1).split())
@@ -232,7 +232,7 @@ dbengine = "wiredtiger"
 
 
 #run_clean()
-#run("native", "set", dbengine, 1, 1, cache_size, "workloadcu")
+run("native", "set", dbengine, 1, 1, cache_size, "workloadcu")
 #run("native", "get", dbengine, 1, 1, cache_size, "workloadcu")
 run("native", "get", dbengine, 8, 128, cache_size, "workloadcu")
 #run("abt", "get", dbengine, 8, 128, 10*1024*1024*1024, "workloadcu")
