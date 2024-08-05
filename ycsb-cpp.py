@@ -4,7 +4,8 @@ import time
 ABT_PATH = "{}/../ppopp21-preemption-artifact/argobots/install".format(os.getcwd())
 MYLIB_PATH = "{}/../mylib".format(os.getcwd())
 ROCKSDB_PATH = "{}/../rocksdb".format(os.getcwd())
-WIREDTIGER_PATH = "{}/../wiredtiger".format(os.getcwd())
+#WIREDTIGER_PATH = "{}/../wiredtiger".format(os.getcwd())
+WIREDTIGER_PATH = "{}/../wt_abt".format(os.getcwd())
 
 ABT_RESTORE_PATH = "{}/../abt_backup/abt_restore".format(os.getcwd())
 ABT_BACKUP_PATH = "{}/../abt_backup/abt_backup".format(os.getcwd())
@@ -216,8 +217,8 @@ mode = "abt"
 #mode = "native"
 #mode = "io_uring"
 
-dbengine = "wiredtiger"
-#dbengine = "rocksdb"
+#dbengine = "wiredtiger"
+dbengine = "rocksdb"
 
 
 #run_clean()
